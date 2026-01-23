@@ -1,21 +1,12 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Snowflake, Flame, Sun, MoreHorizontal, Trash2, Edit } from 'lucide-react';
+import { Snowflake, Flame, Sun, Calendar } from 'lucide-react';
 import { Deal, Temperature } from '@/types/crm';
 import { cn } from '@/lib/utils';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
 
 interface DealCardProps {
   deal: Deal;
-  onEdit?: (deal: Deal) => void;
-  onDelete?: (dealId: string) => void;
-  onArchive?: (dealId: string) => void;
+  onClick?: (deal: Deal) => void;
 }
 
 const temperatureConfig: Record<Temperature, { icon: typeof Snowflake; className: string; label: string }> = {
@@ -24,7 +15,7 @@ const temperatureConfig: Record<Temperature, { icon: typeof Snowflake; className
   hot: { icon: Flame, className: 'text-destructive', label: 'Quente' },
 };
 
-export function DealCard({ deal, onEdit, onDelete, onArchive }: DealCardProps) {
+export function DealCard({ deal, onClick }: DealCardProps) {
   const {
     attributes,
     listeners,
@@ -48,55 +39,57 @@ export function DealCard({ deal, onEdit, onDelete, onArchive }: DealCardProps) {
     }).format(value);
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+    });
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return '??';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    // Only trigger click if not dragging
+    if (!isDragging && onClick) {
+      onClick(deal);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
+      onClick={handleClick}
       className={cn(
         'deal-card group',
         isDragging && 'opacity-50 shadow-lg ring-2 ring-primary'
       )}
     >
-      <div className="flex items-start justify-between mb-2">
-        <h4 className="font-medium text-sm text-foreground line-clamp-1 flex-1">
-          {deal.title}
-        </h4>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit?.(deal)}>
-              <Edit className="w-4 h-4 mr-2" />
-              Editar
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onArchive?.(deal.id)}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              Arquivar
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onDelete?.(deal.id)}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Excluir
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* Header with Avatar and Title */}
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs flex-shrink-0">
+          {getInitials(deal.contactName || deal.title)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-medium text-sm text-foreground line-clamp-1">
+            {deal.title}
+          </h4>
+          <p className="text-xs text-muted-foreground truncate">{deal.contactName || 'Sem contato'}</p>
+        </div>
       </div>
 
-      <p className="text-xs text-muted-foreground mb-2">{deal.contactName}</p>
-
-      <div className="flex items-center justify-between">
+      {/* Value and Temperature */}
+      <div className="flex items-center justify-between mb-2">
         <span className="font-semibold text-sm text-primary">
           {formatCurrency(deal.value)}
         </span>
@@ -105,9 +98,10 @@ export function DealCard({ deal, onEdit, onDelete, onArchive }: DealCardProps) {
         </div>
       </div>
 
+      {/* Tags */}
       {deal.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {deal.tags.slice(0, 3).map((tag) => (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {deal.tags.slice(0, 2).map((tag) => (
             <span
               key={tag.id}
               className="tag-badge text-[10px]"
@@ -116,13 +110,19 @@ export function DealCard({ deal, onEdit, onDelete, onArchive }: DealCardProps) {
               {tag.name}
             </span>
           ))}
-          {deal.tags.length > 3 && (
+          {deal.tags.length > 2 && (
             <span className="text-[10px] text-muted-foreground">
-              +{deal.tags.length - 3}
+              +{deal.tags.length - 2}
             </span>
           )}
         </div>
       )}
+
+      {/* Date */}
+      <div className="flex items-center gap-1 text-xs text-muted-foreground pt-2 border-t border-border/50">
+        <Calendar className="w-3 h-3" />
+        <span>{formatDate(deal.createdAt)}</span>
+      </div>
     </div>
   );
 }

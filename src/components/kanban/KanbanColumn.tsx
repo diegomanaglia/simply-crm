@@ -17,9 +17,7 @@ interface KanbanColumnProps {
   deals: Deal[];
   onEditPhase: (phase: Phase) => void;
   onDeletePhase: (phaseId: string) => void;
-  onEditDeal: (deal: Deal) => void;
-  onDeleteDeal: (dealId: string) => void;
-  onArchiveDeal: (dealId: string) => void;
+  onDealClick: (deal: Deal) => void;
 }
 
 const phaseTypeConfig = {
@@ -33,9 +31,7 @@ export function KanbanColumn({
   deals,
   onEditPhase,
   onDeletePhase,
-  onEditDeal,
-  onDeleteDeal,
-  onArchiveDeal,
+  onDealClick,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: phase.id,
@@ -111,9 +107,7 @@ export function KanbanColumn({
             <DealCard
               key={deal.id}
               deal={deal}
-              onEdit={onEditDeal}
-              onDelete={onDeleteDeal}
-              onArchive={onArchiveDeal}
+              onClick={onDealClick}
             />
           ))}
         </SortableContext>
