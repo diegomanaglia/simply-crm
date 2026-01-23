@@ -310,12 +310,12 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
           </Select>
 
           {/* Tag Filter */}
-          <Select value={tagFilter} onValueChange={setTagFilter}>
+          <Select value={tagFilter || '__all__'} onValueChange={(v) => setTagFilter(v === '__all__' ? '' : v)}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Tag" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas</SelectItem>
+              <SelectItem value="__all__">Todas</SelectItem>
               {allTags.map((tag) => (
                 <SelectItem key={tag.id} value={tag.name}>
                   <div className="flex items-center gap-2">
