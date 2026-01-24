@@ -63,6 +63,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { GoogleAdsCard } from '@/components/integrations/GoogleAdsCard';
+import { GoogleAnalyticsCard } from '@/components/integrations/GoogleAnalyticsCard';
 
 export default function IntegrationsPage() {
   const {
@@ -396,6 +397,9 @@ export default function IntegrationsPage() {
 
       {/* Google Ads Card */}
       <GoogleAdsCard />
+
+      {/* Google Analytics Card */}
+      <GoogleAnalyticsCard />
 
       {/* Future Integrations Placeholder */}
       <Card className="border-dashed border-2 border-muted">
