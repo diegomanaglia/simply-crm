@@ -15,6 +15,7 @@ const PipelinesPage = lazy(() => import("@/pages/PipelinesPage"));
 const ArchivedLeadsPage = lazy(() => import("@/pages/ArchivedLeadsPage"));
 const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const IntegrationsPage = lazy(() => import("@/pages/IntegrationsPage"));
 const CapturePage = lazy(() => import("@/pages/CapturePage"));
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
                       <Route path="/pipelines" element={<PipelinesPage />} />
                       <Route path="/archived" element={<ArchivedLeadsPage />} />
                       <Route path="/reports" element={<ReportsPage />} />
+                      <Route path="/integrations" element={<IntegrationsPage />} />
                       <Route path="/settings" element={<SettingsPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>

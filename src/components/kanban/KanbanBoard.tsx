@@ -11,7 +11,7 @@ import {
   DragEndEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { ArrowLeft, Plus, Search, X, Filter, SortAsc, Snowflake, Sun, Flame } from 'lucide-react';
+import { ArrowLeft, Plus, Search, X, Filter, SortAsc, Snowflake, Sun, Flame, Facebook, Globe } from 'lucide-react';
 import { Pipeline, Deal, Phase, Temperature } from '@/types/crm';
 import { useCRMStore } from '@/store/crmStore';
 import { KanbanColumn } from './KanbanColumn';
@@ -61,6 +61,7 @@ interface KanbanBoardProps {
 }
 
 type SortOption = 'recent' | 'value-high' | 'value-low';
+type OriginFilter = 'all' | 'facebook' | 'capture' | 'manual';
 
 export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
   const { addPhase, updatePhase, deletePhase, addDeal, updateDeal, moveDeal } = useCRMStore();
@@ -87,6 +88,7 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
   const [valueMin, setValueMin] = useState('');
   const [valueMax, setValueMax] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>('recent');
+  const [originFilter, setOriginFilter] = useState<OriginFilter>('all');
   const [showDeletePhaseConfirm, setShowDeletePhaseConfirm] = useState(false);
   const [deletingPhaseId, setDeletingPhaseId] = useState<string | null>(null);
 
@@ -154,6 +156,21 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
       deals = deals.filter((d) => d.value <= parseFloat(valueMax));
     }
 
+    // Origin filter
+    if (originFilter !== 'all') {
+      deals = deals.filter((d) => {
+        const isFromFacebook = d.source === 'Facebook Lead Ads' || 
+          d.origin?.utmParams?.utm_source === 'facebook';
+        const isFromCapture = d.origin?.landingPage || 
+          (d.origin?.utmParams && Object.keys(d.origin.utmParams).length > 0);
+        
+        if (originFilter === 'facebook') return isFromFacebook;
+        if (originFilter === 'capture') return isFromCapture && !isFromFacebook;
+        if (originFilter === 'manual') return !isFromFacebook && !isFromCapture;
+        return true;
+      });
+    }
+
     // Sort
     switch (sortOption) {
       case 'recent':
@@ -168,9 +185,9 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
     }
 
     return deals;
-  }, [pipeline.deals, debouncedSearch, temperatureFilter, tagFilter, valueMin, valueMax, sortOption]);
+  }, [pipeline.deals, debouncedSearch, temperatureFilter, tagFilter, valueMin, valueMax, originFilter, sortOption]);
 
-  const hasActiveFilters = searchQuery || temperatureFilter !== 'all' || tagFilter || valueMin || valueMax;
+  const hasActiveFilters = searchQuery || temperatureFilter !== 'all' || tagFilter || valueMin || valueMax || originFilter !== 'all';
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -178,6 +195,7 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
     setTagFilter('');
     setValueMin('');
     setValueMax('');
+    setOriginFilter('all');
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -404,6 +422,29 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
               </div>
             </PopoverContent>
           </Popover>
+
+          {/* Origin Filter */}
+          <Select value={originFilter} onValueChange={(v) => setOriginFilter(v as OriginFilter)}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Origem" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas origens</SelectItem>
+              <SelectItem value="facebook">
+                <div className="flex items-center gap-2">
+                  <Facebook className="w-4 h-4 text-[#1877F2]" />
+                  Facebook
+                </div>
+              </SelectItem>
+              <SelectItem value="capture">
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-primary" />
+                  Formulário
+                </div>
+              </SelectItem>
+              <SelectItem value="manual">Manual</SelectItem>
+            </SelectContent>
+          </Select>
 
           {/* Sort */}
           <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
