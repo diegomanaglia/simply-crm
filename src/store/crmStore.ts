@@ -14,27 +14,10 @@ const createDefaultPhases = (): Phase[] => [
   { id: generateId(), name: 'Ganho', order: 99, isDefault: true, type: 'won' },
 ];
 
-// Check if this is first time loading (no data in localStorage)
-const getInitialPipelines = (): Pipeline[] => {
-  const stored = localStorage.getItem('simply-crm-storage');
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (parsed.state?.pipelines?.length > 0) {
-        return parsed.state.pipelines;
-      }
-    } catch (e) {
-      // Invalid data, generate mock
-    }
-  }
-  // Generate mock data for first time users
-  return generateMockData().pipelines;
-};
-
 export const useCRMStore = create<CRMState>()(
   persist(
     (set, get) => ({
-      pipelines: getInitialPipelines(),
+      pipelines: [],
       selectedPipelineId: null,
       archivedDeals: [],
 
@@ -233,8 +216,23 @@ export const useCRMStore = create<CRMState>()(
   )
 );
 
-// Function to reset data with fresh mock data
+// Function to load mock data - replaces current data
+export const loadMockData = () => {
+  const mockData = generateMockData();
+  useCRMStore.setState({ 
+    pipelines: mockData.pipelines,
+    archivedDeals: [],
+    selectedPipelineId: null
+  });
+};
+
+// Function to completely reset and reload with mock data
 export const resetToMockData = () => {
   localStorage.removeItem('simply-crm-storage');
-  window.location.reload();
+  const mockData = generateMockData();
+  useCRMStore.setState({ 
+    pipelines: mockData.pipelines,
+    archivedDeals: [],
+    selectedPipelineId: null
+  });
 };
