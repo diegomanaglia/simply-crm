@@ -48,6 +48,11 @@ export interface Deal {
   createdAt: string;
   phaseId: string;
   activities: Activity[];
+  // For archived deals
+  archivedAt?: string;
+  archivedFromPipelineId?: string;
+  archivedFromPipelineName?: string;
+  archivedFromPhaseName?: string;
 }
 
 export interface Phase {
