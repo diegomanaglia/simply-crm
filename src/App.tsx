@@ -14,6 +14,8 @@ import NotFound from "./pages/NotFound";
 const PipelinesPage = lazy(() => import("@/pages/PipelinesPage"));
 const ArchivedLeadsPage = lazy(() => import("@/pages/ArchivedLeadsPage"));
 const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const CapturePage = lazy(() => import("@/pages/CapturePage"));
 
 const queryClient = new QueryClient();
 
@@ -32,17 +34,36 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <MainLayout>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/pipelines" element={<PipelinesPage />} />
-                <Route path="/archived" element={<ArchivedLeadsPage />} />
-                <Route path="/reports" element={<ReportsPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </MainLayout>
+          <Routes>
+            {/* Public capture page - no layout */}
+            <Route
+              path="/captura/:pipelineId"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <CapturePage />
+                </Suspense>
+              }
+            />
+            
+            {/* Main app routes with layout */}
+            <Route
+              path="/*"
+              element={
+                <MainLayout>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/pipelines" element={<PipelinesPage />} />
+                      <Route path="/archived" element={<ArchivedLeadsPage />} />
+                      <Route path="/reports" element={<ReportsPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </MainLayout>
+              }
+            />
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>

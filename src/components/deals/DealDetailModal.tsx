@@ -274,6 +274,59 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
                 </div>
               </div>
 
+              {/* Lead Origin */}
+              {deal.origin && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Origem do Lead</h4>
+                  
+                  <div className="grid grid-cols-2 gap-3 p-3 bg-secondary/30 rounded-lg">
+                    {deal.origin.utmParams?.utm_source && (
+                      <div>
+                        <p className="text-muted-foreground text-xs">Fonte</p>
+                        <p className="text-foreground text-sm font-medium capitalize">{deal.origin.utmParams.utm_source}</p>
+                      </div>
+                    )}
+                    {deal.origin.utmParams?.utm_medium && (
+                      <div>
+                        <p className="text-muted-foreground text-xs">Mídia</p>
+                        <p className="text-foreground text-sm capitalize">{deal.origin.utmParams.utm_medium}</p>
+                      </div>
+                    )}
+                    {deal.origin.utmParams?.utm_campaign && (
+                      <div>
+                        <p className="text-muted-foreground text-xs">Campanha</p>
+                        <p className="text-foreground text-sm">{deal.origin.utmParams.utm_campaign}</p>
+                      </div>
+                    )}
+                    {deal.origin.device && (
+                      <div>
+                        <p className="text-muted-foreground text-xs">Dispositivo</p>
+                        <p className="text-foreground text-sm capitalize">{deal.origin.device}</p>
+                      </div>
+                    )}
+                    {deal.origin.browser && (
+                      <div>
+                        <p className="text-muted-foreground text-xs">Navegador</p>
+                        <p className="text-foreground text-sm">{deal.origin.browser}</p>
+                      </div>
+                    )}
+                    {deal.origin.os && (
+                      <div>
+                        <p className="text-muted-foreground text-xs">Sistema</p>
+                        <p className="text-foreground text-sm">{deal.origin.os}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {deal.origin.referrer && (
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-medium">Referência: </span>
+                      <span className="break-all">{deal.origin.referrer}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Tags */}
               {deal.tags.length > 0 && (
                 <div className="space-y-2">
