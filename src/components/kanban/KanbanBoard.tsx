@@ -11,13 +11,15 @@ import {
   DragEndEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { ArrowLeft, Plus, Search, X, Filter, SortAsc, Snowflake, Sun, Flame, Facebook, Globe } from 'lucide-react';
+import { ArrowLeft, Plus, Search, X, Filter, SortAsc, Snowflake, Sun, Flame, Facebook, Globe, Download, Upload } from 'lucide-react';
 import { Pipeline, Deal, Phase, Temperature } from '@/types/crm';
 import { useCRMStore } from '@/store/crmStore';
 import { KanbanColumn } from './KanbanColumn';
 import { DealCard } from '@/components/deals/DealCard';
 import { CreateDealModal } from '@/components/deals/CreateDealModal';
 import { DealDetailModal } from '@/components/deals/DealDetailModal';
+import { ExportModal, ImportModal } from '@/components/export';
+import { ExportDeal } from '@/lib/export-utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
@@ -91,6 +93,8 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
   const [originFilter, setOriginFilter] = useState<OriginFilter>('all');
   const [showDeletePhaseConfirm, setShowDeletePhaseConfirm] = useState(false);
   const [deletingPhaseId, setDeletingPhaseId] = useState<string | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -311,6 +315,14 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
+            <Upload className="w-4 h-4 mr-2" />
+            Importar
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowExportModal(true)}>
+            <Download className="w-4 h-4 mr-2" />
+            Exportar
+          </Button>
           <Button variant="outline" onClick={() => setShowPhaseModal(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Adicionar Fase
@@ -600,6 +612,27 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
           setSelectedDeal(null);
         }}
         onEdit={handleEditDeal}
+      />
+
+      {/* Export Modal */}
+      <ExportModal
+        open={showExportModal}
+        onOpenChange={setShowExportModal}
+        pipeline={pipeline}
+        allDeals={pipeline.deals.map(deal => {
+          const phase = pipeline.phases.find(p => p.id === deal.phaseId);
+          return {
+            ...deal,
+            pipelineName: pipeline.name,
+            phaseName: phase?.name || '',
+          } as ExportDeal;
+        })}
+      />
+
+      {/* Import Modal */}
+      <ImportModal
+        open={showImportModal}
+        onOpenChange={setShowImportModal}
       />
     </div>
   );

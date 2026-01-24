@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { useCRMStore } from '@/store/crmStore';
 import { 
   BarChart3, TrendingUp, DollarSign, Target, Calendar, 
-  Clock, Filter, XCircle, Trophy, Users, Flame, Download
+  Clock, Filter, XCircle, Trophy, Users, Flame, Download,
+  FileSpreadsheet, FileText, FileDown
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -25,12 +26,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Deal, Temperature } from '@/types/crm';
-import { exportDealsToCSV } from '@/lib/csv-export';
+import { exportToCSV, exportToExcel, calculateSummary, ExportDeal } from '@/lib/export-utils';
+import { exportToPDF, exportSummaryToPDF } from '@/lib/pdf-export';
 import { toast } from '@/hooks/use-toast';
 
 type PeriodFilter = 'week' | 'month' | '3months' | 'all';
@@ -231,17 +239,48 @@ export default function ReportsPage() {
             </SelectContent>
           </Select>
 
-          <Button
-            variant="outline"
-            onClick={() => {
-              exportDealsToCSV(tableDeals, 'relatorio-crm');
-              toast({ title: 'Relatório exportado', description: 'O arquivo CSV foi baixado.' });
-            }}
-            disabled={tableDeals.length === 0}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Exportar CSV
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={tableDeals.length === 0}>
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => {
+                const exportDeals = tableDeals as ExportDeal[];
+                const summary = calculateSummary(exportDeals, exportDeals);
+                exportToExcel(exportDeals, 'relatorio-crm', summary);
+                toast({ title: 'Relatório exportado', description: 'O arquivo Excel foi baixado.' });
+              }}>
+                <FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />
+                Excel (.xlsx)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                exportToCSV(tableDeals as ExportDeal[], 'relatorio-crm');
+                toast({ title: 'Relatório exportado', description: 'O arquivo CSV foi baixado.' });
+              }}>
+                <FileText className="w-4 h-4 mr-2 text-blue-600" />
+                CSV (.csv)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                const exportDeals = tableDeals as ExportDeal[];
+                const summary = calculateSummary(exportDeals, exportDeals);
+                const { start, end } = getDateRange();
+                exportToPDF(
+                  exportDeals,
+                  'relatorio-crm',
+                  `Relatório de Negócios`,
+                  summary,
+                  { from: start, to: end }
+                );
+                toast({ title: 'Relatório exportado', description: 'O arquivo PDF foi baixado.' });
+              }}>
+                <FileDown className="w-4 h-4 mr-2 text-red-600" />
+                PDF (.pdf)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
