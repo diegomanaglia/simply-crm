@@ -50,15 +50,16 @@
     --temp-warm: 38 92% 50%;
     --temp-hot: 0 84% 60%;
 
-    /* Sidebar */
-    --sidebar-background: 239 84% 67%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 239 84% 67%;
-    --sidebar-accent: 239 84% 72%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 239 84% 60%;
-    --sidebar-ring: 0 0% 100%;
+    /* Sidebar - Darker blue for better contrast */
+    --sidebar-background: 224 50% 18%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 224 50% 18%;
+    --sidebar-accent: 224 50% 25%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 224 50% 25%;
+    --sidebar-ring: 210 40% 98%;
+    --sidebar-muted: 224 50% 30%;
 
     /* Kanban */
     --kanban-column: 220 14% 96%;
@@ -128,7 +129,7 @@
 
 @layer components {
   .sidebar-gradient {
-    background: linear-gradient(180deg, hsl(239 84% 67%) 0%, hsl(239 84% 55%) 100%);
+    background: linear-gradient(180deg, hsl(224 50% 18%) 0%, hsl(224 55% 12%) 100%);
   }
 
   .card-shadow {
