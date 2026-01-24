@@ -64,6 +64,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { GoogleAdsCard } from '@/components/integrations/GoogleAdsCard';
 import { GoogleAnalyticsCard } from '@/components/integrations/GoogleAnalyticsCard';
+import { WebhooksCard } from '@/components/webhooks';
 
 export default function IntegrationsPage() {
   const {
@@ -400,6 +401,9 @@ export default function IntegrationsPage() {
 
       {/* Google Analytics Card */}
       <GoogleAnalyticsCard />
+
+      {/* Webhooks Card */}
+      <WebhooksCard />
 
       {/* Future Integrations Placeholder */}
       <Card className="border-dashed border-2 border-muted">
