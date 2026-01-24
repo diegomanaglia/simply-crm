@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Plus, MoreVertical, Edit2, Trash2, GitBranch } from 'lucide-react';
-import { useCRMStore } from '@/store/crmStore';
+import { Plus, MoreVertical, Edit2, Trash2, GitBranch, RefreshCw } from 'lucide-react';
+import { useCRMStore, resetToMockData } from '@/store/crmStore';
 import { KanbanBoard } from '@/components/kanban/KanbanBoard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -94,10 +94,16 @@ export default function PipelinesPage() {
           <h1 className="text-2xl font-bold text-foreground">Pipelines</h1>
           <p className="text-muted-foreground">Gerencie seus funis de vendas</p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Pipeline
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={resetToMockData} title="Carregar dados de exemplo">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Resetar Dados
+          </Button>
+          <Button onClick={() => setShowCreateModal(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Pipeline
+          </Button>
+        </div>
       </div>
 
       {/* Pipeline Cards */}
