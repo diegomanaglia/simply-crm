@@ -6,6 +6,34 @@ export interface Tag {
   color: string;
 }
 
+export type ActivityType = 
+  | 'created'
+  | 'phase_changed'
+  | 'pipeline_changed'
+  | 'info_updated'
+  | 'archived'
+  | 'restored'
+  | 'temperature_changed'
+  | 'value_changed';
+
+export interface Activity {
+  id: string;
+  type: ActivityType;
+  timestamp: string;
+  description: string;
+  metadata?: {
+    fromPhase?: string;
+    toPhase?: string;
+    fromPipeline?: string;
+    toPipeline?: string;
+    fromValue?: number;
+    toValue?: number;
+    fromTemperature?: Temperature;
+    toTemperature?: Temperature;
+    fieldChanged?: string;
+  };
+}
+
 export interface Deal {
   id: string;
   title: string;
@@ -19,6 +47,7 @@ export interface Deal {
   temperature: Temperature;
   createdAt: string;
   phaseId: string;
+  activities: Activity[];
 }
 
 export interface Phase {
@@ -52,12 +81,17 @@ export interface CRMState {
   deletePhase: (pipelineId: string, phaseId: string) => void;
   reorderPhases: (pipelineId: string, phases: Phase[]) => void;
   
-  addDeal: (pipelineId: string, deal: Omit<Deal, 'id' | 'createdAt'>) => void;
+  addDeal: (pipelineId: string, deal: Omit<Deal, 'id' | 'createdAt' | 'activities'>) => void;
   updateDeal: (pipelineId: string, dealId: string, deal: Partial<Deal>) => void;
   deleteDeal: (pipelineId: string, dealId: string) => void;
   moveDeal: (pipelineId: string, dealId: string, newPhaseId: string) => void;
+  moveDealToPipeline: (fromPipelineId: string, dealId: string, toPipelineId: string, toPhaseId: string) => void;
   archiveDeal: (pipelineId: string, dealId: string) => void;
   
   archivedDeals: Deal[];
   restoreDeal: (dealId: string, pipelineId: string, phaseId: string) => void;
+  
+  // Helper to get phase/pipeline names
+  getPhaseName: (pipelineId: string, phaseId: string) => string;
+  getPipelineName: (pipelineId: string) => string;
 }

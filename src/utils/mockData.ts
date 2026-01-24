@@ -115,6 +115,7 @@ function generateDeal(phaseId: string): Deal {
   const company = randomItem(companies);
   const isCompany = Math.random() > 0.5;
   
+  const createdAt = generateRandomDate(90);
   return {
     id: generateId(),
     title: `${randomItem(dealTitles)} - ${company}`,
@@ -126,8 +127,14 @@ function generateDeal(phaseId: string): Deal {
     tags: generateTags(),
     source: randomItem(sources),
     temperature: randomItem(temperatures),
-    createdAt: generateRandomDate(90), // últimos 90 dias
-    phaseId
+    createdAt,
+    phaseId,
+    activities: [{
+      id: generateId(),
+      type: 'created' as const,
+      timestamp: createdAt,
+      description: 'Negócio criado',
+    }],
   };
 }
 

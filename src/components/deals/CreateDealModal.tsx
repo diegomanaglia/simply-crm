@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 interface CreateDealModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (deal: Omit<Deal, 'id' | 'createdAt'>) => void;
+  onSubmit: (deal: Omit<Deal, 'id' | 'createdAt' | 'activities'>) => void;
   phaseId: string;
   editingDeal?: Deal;
 }

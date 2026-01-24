@@ -1,6 +1,10 @@
 import { useState } from 'react';
-import { X, Snowflake, Sun, Flame, Edit, Archive, ArrowRight, Calendar, Mail, Phone, FileText, Tag, DollarSign, Thermometer } from 'lucide-react';
-import { Deal, Temperature, Pipeline } from '@/types/crm';
+import { 
+  X, Snowflake, Sun, Flame, Edit, Archive, ArrowRight, Calendar, Mail, Phone, 
+  FileText, Tag, DollarSign, History, Plus, ArrowRightLeft, ThermometerSun,
+  CheckCircle2, XCircle, RotateCcw, PenLine
+} from 'lucide-react';
+import { Deal, Temperature, Pipeline, Activity, ActivityType } from '@/types/crm';
 import { useCRMStore } from '@/store/crmStore';
 import {
   Dialog,
@@ -16,7 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface DealDetailModalProps {
   deal: Deal | null;
@@ -32,8 +38,19 @@ const temperatureConfig: Record<Temperature, { icon: typeof Snowflake; className
   hot: { icon: Flame, className: 'text-destructive', label: 'Quente', bgClass: 'bg-destructive/10' },
 };
 
+const activityIcons: Record<ActivityType, { icon: typeof Plus; className: string }> = {
+  created: { icon: Plus, className: 'text-success bg-success/10' },
+  phase_changed: { icon: ArrowRight, className: 'text-info bg-info/10' },
+  pipeline_changed: { icon: ArrowRightLeft, className: 'text-primary bg-primary/10' },
+  info_updated: { icon: PenLine, className: 'text-warning bg-warning/10' },
+  archived: { icon: Archive, className: 'text-muted-foreground bg-muted' },
+  restored: { icon: RotateCcw, className: 'text-success bg-success/10' },
+  temperature_changed: { icon: ThermometerSun, className: 'text-warning bg-warning/10' },
+  value_changed: { icon: DollarSign, className: 'text-success bg-success/10' },
+};
+
 export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealDetailModalProps) {
-  const { pipelines, archiveDeal, moveDeal } = useCRMStore();
+  const { pipelines, archiveDeal, moveDealToPipeline } = useCRMStore();
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [targetPipelineId, setTargetPipelineId] = useState('');
   const [targetPhaseId, setTargetPhaseId] = useState('');
@@ -60,6 +77,15 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
     });
   };
 
+  const formatShortDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -76,23 +102,23 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
 
   const handleMove = () => {
     if (targetPipelineId && targetPhaseId) {
-      // If moving to same pipeline, just update phase
-      if (targetPipelineId === pipeline.id) {
-        moveDeal(pipeline.id, deal.id, targetPhaseId);
-      }
-      // Moving to different pipeline requires more complex logic
-      // For now, we'll handle same-pipeline moves
+      moveDealToPipeline(pipeline.id, deal.id, targetPipelineId, targetPhaseId);
       setShowMoveDialog(false);
+      setTargetPipelineId('');
+      setTargetPhaseId('');
       onClose();
     }
   };
 
   const targetPipeline = pipelines.find((p) => p.id === targetPipelineId);
+  const sortedActivities = [...(deal.activities || [])].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
 
   return (
     <>
       <Dialog open={open && !showMoveDialog} onOpenChange={(isOpen) => !isOpen && onClose()}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
@@ -107,142 +133,195 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 mt-4">
-            {/* Value and Temperature */}
-            <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-primary" />
-                <span className="text-2xl font-bold text-primary">{formatCurrency(deal.value)}</span>
-              </div>
-              <div className={cn('flex items-center gap-2 px-3 py-1.5 rounded-full', temperatureConfig[deal.temperature].bgClass)}>
-                <TempIcon className={cn('w-4 h-4', temperatureConfig[deal.temperature].className)} />
-                <span className={cn('text-sm font-medium', temperatureConfig[deal.temperature].className)}>
-                  {temperatureConfig[deal.temperature].label}
-                </span>
-              </div>
-            </div>
-
-            {/* Contact Info */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Informações do Contato</h4>
-              
-              {deal.contactName && (
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs">Nome</p>
-                    <p className="text-foreground">{deal.contactName}</p>
-                  </div>
+          <Tabs defaultValue="details" className="flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="details">Detalhes</TabsTrigger>
+              <TabsTrigger value="history" className="flex items-center gap-2">
+                <History className="w-4 h-4" />
+                Histórico
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="details" className="flex-1 overflow-auto mt-4 space-y-4">
+              {/* Value and Temperature */}
+              <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-primary" />
+                  <span className="text-2xl font-bold text-primary">{formatCurrency(deal.value)}</span>
                 </div>
-              )}
-
-              {deal.document && (
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs">CPF/CNPJ</p>
-                    <p className="text-foreground">{deal.document}</p>
-                  </div>
-                </div>
-              )}
-
-              {deal.email && (
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs">Email</p>
-                    <p className="text-foreground">{deal.email}</p>
-                  </div>
-                </div>
-              )}
-
-              {deal.phone && (
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                    <Phone className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs">Telefone</p>
-                    <p className="text-foreground">{deal.phone}</p>
-                  </div>
-                </div>
-              )}
-
-              {deal.source && (
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                    <Tag className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs">Fonte</p>
-                    <p className="text-foreground">{deal.source}</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Criado em</p>
-                  <p className="text-foreground">{formatDate(deal.createdAt)}</p>
+                <div className={cn('flex items-center gap-2 px-3 py-1.5 rounded-full', temperatureConfig[deal.temperature].bgClass)}>
+                  <TempIcon className={cn('w-4 h-4', temperatureConfig[deal.temperature].className)} />
+                  <span className={cn('text-sm font-medium', temperatureConfig[deal.temperature].className)}>
+                    {temperatureConfig[deal.temperature].label}
+                  </span>
                 </div>
               </div>
-            </div>
 
-            {/* Tags */}
-            {deal.tags.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Tags</h4>
-                <div className="flex flex-wrap gap-2">
-                  {deal.tags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="tag-badge"
-                      style={{ backgroundColor: tag.color + '20', color: tag.color }}
-                    >
-                      {tag.name}
-                    </span>
-                  ))}
+              {/* Contact Info */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Informações do Contato</h4>
+                
+                {deal.contactName && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Nome</p>
+                      <p className="text-foreground">{deal.contactName}</p>
+                    </div>
+                  </div>
+                )}
+
+                {deal.document && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">CPF/CNPJ</p>
+                      <p className="text-foreground">{deal.document}</p>
+                    </div>
+                  </div>
+                )}
+
+                {deal.email && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Email</p>
+                      <p className="text-foreground">{deal.email}</p>
+                    </div>
+                  </div>
+                )}
+
+                {deal.phone && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Telefone</p>
+                      <p className="text-foreground">{deal.phone}</p>
+                    </div>
+                  </div>
+                )}
+
+                {deal.source && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                      <Tag className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Fonte</p>
+                      <p className="text-foreground">{deal.source}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Criado em</p>
+                    <p className="text-foreground">{formatDate(deal.createdAt)}</p>
+                  </div>
                 </div>
               </div>
-            )}
 
-            {/* Actions */}
-            <div className="flex gap-2 pt-4 border-t border-border">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => onEdit(deal)}
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Editar
-              </Button>
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => setShowMoveDialog(true)}
-              >
-                <ArrowRight className="w-4 h-4 mr-2" />
-                Mover
-              </Button>
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={handleArchive}
-              >
-                <Archive className="w-4 h-4 mr-2" />
-                Arquivar
-              </Button>
-            </div>
-          </div>
+              {/* Tags */}
+              {deal.tags.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Tags</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {deal.tags.map((tag) => (
+                      <span
+                        key={tag.id}
+                        className="tag-badge"
+                        style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                      >
+                        {tag.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-4 border-t border-border">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => onEdit(deal)}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Editar
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setShowMoveDialog(true)}
+                >
+                  <ArrowRightLeft className="w-4 h-4 mr-2" />
+                  Mover
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={handleArchive}
+                >
+                  <Archive className="w-4 h-4 mr-2" />
+                  Arquivar
+                </Button>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="history" className="flex-1 min-h-0 mt-4">
+              <ScrollArea className="h-[400px] pr-4">
+                {sortedActivities.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                    <History className="w-12 h-12 mb-2 opacity-50" />
+                    <p>Nenhuma atividade registrada</p>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    {/* Timeline line */}
+                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
+                    
+                    <div className="space-y-4">
+                      {sortedActivities.map((activity, index) => {
+                        const iconConfig = activityIcons[activity.type];
+                        const IconComponent = iconConfig.icon;
+                        
+                        return (
+                          <div key={activity.id} className="relative flex gap-4 pl-2">
+                            {/* Icon */}
+                            <div className={cn(
+                              'relative z-10 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
+                              iconConfig.className
+                            )}>
+                              <IconComponent className="w-4 h-4" />
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="flex-1 pb-4">
+                              <p className="text-sm text-foreground">{activity.description}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {formatShortDate(activity.timestamp)}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
 
@@ -250,11 +329,15 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
       <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Mover Negócio</DialogTitle>
+            <DialogTitle>Mover para outro Pipeline</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Selecione o pipeline e a fase de destino para mover este negócio.
+            </p>
+            
             <div className="space-y-2">
-              <label className="text-sm font-medium">Pipeline</label>
+              <label className="text-sm font-medium">Pipeline de destino</label>
               <Select value={targetPipelineId} onValueChange={(value) => {
                 setTargetPipelineId(value);
                 setTargetPhaseId('');
@@ -265,7 +348,7 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
                 <SelectContent>
                   {pipelines.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.name}
+                      {p.name} {p.id === pipeline.id && '(atual)'}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -274,28 +357,35 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
 
             {targetPipelineId && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Fase</label>
+                <label className="text-sm font-medium">Fase de destino</label>
                 <Select value={targetPhaseId} onValueChange={setTargetPhaseId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a fase" />
                   </SelectTrigger>
                   <SelectContent>
-                    {targetPipeline?.phases.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
+                    {targetPipeline?.phases
+                      .sort((a, b) => a.order - b.order)
+                      .map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
 
             <div className="flex gap-3 pt-4">
-              <Button variant="outline" onClick={() => setShowMoveDialog(false)} className="flex-1">
+              <Button variant="outline" onClick={() => {
+                setShowMoveDialog(false);
+                setTargetPipelineId('');
+                setTargetPhaseId('');
+              }} className="flex-1">
                 Cancelar
               </Button>
               <Button onClick={handleMove} disabled={!targetPipelineId || !targetPhaseId} className="flex-1">
-                Mover
+                <ArrowRightLeft className="w-4 h-4 mr-2" />
+                Mover Negócio
               </Button>
             </div>
           </div>
