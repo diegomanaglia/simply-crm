@@ -11,6 +11,9 @@ import {
   validatePhone, 
   formatPhone 
 } from '@/lib/validators';
+import { trackLeadCaptured } from '@/lib/analytics';
+import { useAnalyticsSettings } from '@/hooks/use-analytics-settings';
+import { initGA4 } from '@/lib/analytics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,6 +43,14 @@ export default function CapturePage() {
 
   const pipeline = pipelines.find((p) => p.id === pipelineId);
   const captureSettings = pipelineId ? getCaptureSettings(pipelineId) : undefined;
+  const { settings: analyticsSettings } = useAnalyticsSettings();
+
+  // Initialize GA4 for public pages
+  useEffect(() => {
+    if (analyticsSettings?.tracking_enabled && analyticsSettings?.ga4_measurement_id) {
+      initGA4(analyticsSettings.ga4_measurement_id);
+    }
+  }, [analyticsSettings]);
 
   // Capture UTMs on page load
   useEffect(() => {
@@ -109,6 +120,14 @@ export default function CapturePage() {
       tags: autoTags,
       origin,
       notes: company ? `Empresa: ${company}` : undefined,
+    });
+
+    // Track lead captured event for GA4
+    trackLeadCaptured({
+      pipelineName: pipeline?.name || '',
+      pipelineId: pipelineId,
+      source: origin.utmParams.utm_source,
+      campaign: origin.utmParams.utm_campaign,
     });
 
     setIsSubmitting(false);
