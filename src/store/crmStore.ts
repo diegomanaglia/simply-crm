@@ -211,6 +211,14 @@ export const useCRMStore = create<CRMState>()(
                     { fromTemperature: d.temperature, toTemperature: dealUpdate.temperature }
                   ));
                 }
+
+                // Track notes changes
+                if (dealUpdate.notes !== undefined && dealUpdate.notes !== d.notes) {
+                  activities.push(createActivity(
+                    'notes_updated',
+                    'Notas/observações atualizadas'
+                  ));
+                }
                 
                 // Track general info updates
                 const fieldsChanged: string[] = [];
@@ -341,6 +349,34 @@ export const useCRMStore = create<CRMState>()(
             p.id === pipelineId
               ? { ...p, deals: p.deals.filter((d) => d.id !== dealId) }
               : p
+          ),
+        }));
+      },
+
+      duplicateDeal: (pipelineId: string, dealId: string) => {
+        const pipeline = get().pipelines.find((p) => p.id === pipelineId);
+        const deal = pipeline?.deals.find((d) => d.id === dealId);
+        if (!deal || !pipeline) return;
+
+        const phase = pipeline.phases.find((ph) => ph.id === deal.phaseId);
+        
+        const duplicateActivity = createActivity(
+          'duplicated',
+          `Negócio duplicado de "${deal.title}"`,
+          { duplicatedFromId: deal.id }
+        );
+
+        const newDeal: Deal = {
+          ...deal,
+          id: generateId(),
+          title: `${deal.title} (Cópia)`,
+          createdAt: new Date().toISOString(),
+          activities: [duplicateActivity],
+        };
+
+        set((state) => ({
+          pipelines: state.pipelines.map((p) =>
+            p.id === pipelineId ? { ...p, deals: [...p.deals, newDeal] } : p
           ),
         }));
       },

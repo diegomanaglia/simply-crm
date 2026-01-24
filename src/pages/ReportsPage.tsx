@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useCRMStore } from '@/store/crmStore';
 import { 
-  BarChart3, TrendingUp, DollarSign, Target, PieChart, Calendar, 
-  ArrowDown, ArrowUp, Clock, Filter, XCircle, Trophy, Users, Flame
+  BarChart3, TrendingUp, DollarSign, Target, Calendar, 
+  Clock, Filter, XCircle, Trophy, Users, Flame, Download
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -28,7 +28,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Deal, Temperature } from '@/types/crm';
+import { exportDealsToCSV } from '@/lib/csv-export';
+import { toast } from '@/hooks/use-toast';
 
 type PeriodFilter = 'week' | 'month' | '3months' | 'all';
 
@@ -198,6 +201,20 @@ export default function ReportsPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Relatórios</h1>
           <p className="text-muted-foreground">Análise detalhada do seu pipeline</p>
+        </div>
+        
+        {/* Export Button */}
+        <Button
+          variant="outline"
+          onClick={() => {
+            exportDealsToCSV(tableDeals, 'relatorio-crm');
+            toast({ title: 'Relatório exportado', description: 'O arquivo CSV foi baixado.' });
+          }}
+          disabled={tableDeals.length === 0}
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Exportar CSV
+        </Button>
         </div>
         
         {/* Filters */}

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, Snowflake, Sun, Flame, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Snowflake, Sun, Flame, Plus, AlertCircle } from 'lucide-react';
 import { Temperature, Tag, Deal } from '@/types/crm';
 import {
   Dialog,
@@ -10,7 +10,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import {
+  validateDocument,
+  validateEmail,
+  validatePhone,
+  formatDocument,
+  formatPhone,
+} from '@/lib/validators';
 
 interface CreateDealModalProps {
   open: boolean;
@@ -31,6 +39,14 @@ const tagColors = [
   '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6',
 ];
 
+interface ValidationErrors {
+  title?: string;
+  value?: string;
+  document?: string;
+  email?: string;
+  phone?: string;
+}
+
 export function CreateDealModal({ open, onClose, onSubmit, phaseId, editingDeal }: CreateDealModalProps) {
   const [title, setTitle] = useState(editingDeal?.title || '');
   const [contactName, setContactName] = useState(editingDeal?.contactName || '');
@@ -42,6 +58,68 @@ export function CreateDealModal({ open, onClose, onSubmit, phaseId, editingDeal 
   const [temperature, setTemperature] = useState<Temperature>(editingDeal?.temperature || 'cold');
   const [tags, setTags] = useState<Tag[]>(editingDeal?.tags || []);
   const [tagInput, setTagInput] = useState('');
+  const [notes, setNotes] = useState(editingDeal?.notes || '');
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Reset form when editingDeal changes
+  useEffect(() => {
+    if (editingDeal) {
+      setTitle(editingDeal.title);
+      setContactName(editingDeal.contactName);
+      setDocument(editingDeal.document);
+      setPhone(editingDeal.phone);
+      setEmail(editingDeal.email);
+      setValue(editingDeal.value?.toString() || '');
+      setSource(editingDeal.source);
+      setTemperature(editingDeal.temperature);
+      setTags(editingDeal.tags);
+      setNotes(editingDeal.notes || '');
+    } else {
+      resetForm();
+    }
+  }, [editingDeal]);
+
+  const validateField = (field: string, fieldValue: string): string | undefined => {
+    switch (field) {
+      case 'title':
+        if (!fieldValue.trim()) return 'Nome do negócio é obrigatório';
+        break;
+      case 'value':
+        if (!fieldValue || parseFloat(fieldValue) <= 0) return 'Valor deve ser maior que zero';
+        break;
+      case 'document':
+        const docResult = validateDocument(fieldValue);
+        if (!docResult.valid) return docResult.message;
+        break;
+      case 'email':
+        const emailResult = validateEmail(fieldValue);
+        if (!emailResult.valid) return emailResult.message;
+        break;
+      case 'phone':
+        const phoneResult = validatePhone(fieldValue);
+        if (!phoneResult.valid) return phoneResult.message;
+        break;
+    }
+    return undefined;
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    const fieldValue = { title, value, document, email, phone }[field] || '';
+    const error = validateField(field, fieldValue);
+    setErrors((prev) => ({ ...prev, [field]: error }));
+  };
+
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatDocument(e.target.value);
+    setDocument(formatted);
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    setPhone(formatted);
+  };
 
   const handleAddTag = () => {
     if (tagInput.trim()) {
@@ -61,7 +139,23 @@ export function CreateDealModal({ open, onClose, onSubmit, phaseId, editingDeal 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    
+    // Validate all required fields
+    const newErrors: ValidationErrors = {
+      title: validateField('title', title),
+      value: validateField('value', value),
+      document: validateField('document', document),
+      email: validateField('email', email),
+      phone: validateField('phone', phone),
+    };
+
+    setErrors(newErrors);
+    setTouched({ title: true, value: true, document: true, email: true, phone: true });
+
+    // Check if there are any errors
+    if (Object.values(newErrors).some((error) => error)) {
+      return;
+    }
 
     onSubmit({
       title: title.trim(),
@@ -74,6 +168,7 @@ export function CreateDealModal({ open, onClose, onSubmit, phaseId, editingDeal 
       temperature,
       tags,
       phaseId,
+      notes: notes.trim(),
     });
 
     resetForm();
@@ -91,6 +186,9 @@ export function CreateDealModal({ open, onClose, onSubmit, phaseId, editingDeal 
     setTemperature('cold');
     setTags([]);
     setTagInput('');
+    setNotes('');
+    setErrors({});
+    setTouched({});
   };
 
   return (
@@ -107,9 +205,16 @@ export function CreateDealModal({ open, onClose, onSubmit, phaseId, editingDeal 
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onBlur={() => handleBlur('title')}
               placeholder="Ex: Venda de Software"
-              required
+              className={cn(errors.title && touched.title && 'border-destructive')}
             />
+            {errors.title && touched.title && (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {errors.title}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -128,18 +233,34 @@ export function CreateDealModal({ open, onClose, onSubmit, phaseId, editingDeal 
               <Input
                 id="document"
                 value={document}
-                onChange={(e) => setDocument(e.target.value)}
+                onChange={handleDocumentChange}
+                onBlur={() => handleBlur('document')}
                 placeholder="000.000.000-00"
+                className={cn(errors.document && touched.document && 'border-destructive')}
               />
+              {errors.document && touched.document && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {errors.document}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Telefone</Label>
               <Input
                 id="phone"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={handlePhoneChange}
+                onBlur={() => handleBlur('phone')}
                 placeholder="(00) 00000-0000"
+                className={cn(errors.phone && touched.phone && 'border-destructive')}
               />
+              {errors.phone && touched.phone && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {errors.phone}
+                </p>
+              )}
             </div>
           </div>
 
@@ -150,22 +271,38 @@ export function CreateDealModal({ open, onClose, onSubmit, phaseId, editingDeal 
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => handleBlur('email')}
               placeholder="email@exemplo.com"
+              className={cn(errors.email && touched.email && 'border-destructive')}
             />
+            {errors.email && touched.email && (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {errors.email}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="value">Valor (R$)</Label>
+              <Label htmlFor="value">Valor (R$) *</Label>
               <Input
                 id="value"
                 type="number"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
+                onBlur={() => handleBlur('value')}
                 placeholder="0,00"
                 min="0"
                 step="0.01"
+                className={cn(errors.value && touched.value && 'border-destructive')}
               />
+              {errors.value && touched.value && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {errors.value}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="source">Fonte</Label>
@@ -238,6 +375,17 @@ export function CreateDealModal({ open, onClose, onSubmit, phaseId, editingDeal 
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Observações</Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Adicione notas ou observações sobre este negócio..."
+              rows={3}
+            />
           </div>
 
           <div className="flex gap-3 pt-4">
