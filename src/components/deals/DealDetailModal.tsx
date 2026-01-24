@@ -2,16 +2,27 @@ import { useState } from 'react';
 import { 
   X, Snowflake, Sun, Flame, Edit, Archive, ArrowRight, Calendar, Mail, Phone, 
   FileText, Tag, DollarSign, History, Plus, ArrowRightLeft, ThermometerSun,
-  CheckCircle2, XCircle, RotateCcw, PenLine
+  CheckCircle2, XCircle, RotateCcw, PenLine, Copy, StickyNote
 } from 'lucide-react';
 import { Deal, Temperature, Pipeline, Activity, ActivityType } from '@/types/crm';
 import { useCRMStore } from '@/store/crmStore';
+import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -47,11 +58,14 @@ const activityIcons: Record<ActivityType, { icon: typeof Plus; className: string
   restored: { icon: RotateCcw, className: 'text-success bg-success/10' },
   temperature_changed: { icon: ThermometerSun, className: 'text-warning bg-warning/10' },
   value_changed: { icon: DollarSign, className: 'text-success bg-success/10' },
+  notes_updated: { icon: StickyNote, className: 'text-info bg-info/10' },
+  duplicated: { icon: Copy, className: 'text-primary bg-primary/10' },
 };
 
 export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealDetailModalProps) {
-  const { pipelines, archiveDeal, moveDealToPipeline } = useCRMStore();
+  const { pipelines, archiveDeal, moveDealToPipeline, duplicateDeal } = useCRMStore();
   const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [targetPipelineId, setTargetPipelineId] = useState('');
   const [targetPhaseId, setTargetPhaseId] = useState('');
 
@@ -97,12 +111,30 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
 
   const handleArchive = () => {
     archiveDeal(pipeline.id, deal.id);
+    toast({
+      title: 'Negócio arquivado',
+      description: `"${deal.title}" foi movido para os arquivados.`,
+    });
+    setShowArchiveConfirm(false);
+    onClose();
+  };
+
+  const handleDuplicate = () => {
+    duplicateDeal(pipeline.id, deal.id);
+    toast({
+      title: 'Negócio duplicado',
+      description: `Uma cópia de "${deal.title}" foi criada.`,
+    });
     onClose();
   };
 
   const handleMove = () => {
     if (targetPipelineId && targetPhaseId) {
       moveDealToPipeline(pipeline.id, deal.id, targetPipelineId, targetPhaseId);
+      toast({
+        title: 'Negócio movido',
+        description: `"${deal.title}" foi movido para outro pipeline.`,
+      });
       setShowMoveDialog(false);
       setTargetPipelineId('');
       setTargetPhaseId('');
@@ -117,7 +149,7 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
 
   return (
     <>
-      <Dialog open={open && !showMoveDialog} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <Dialog open={open && !showMoveDialog && !showArchiveConfirm} onOpenChange={(isOpen) => !isOpen && onClose()}>
         <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
@@ -156,6 +188,16 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
                   </span>
                 </div>
               </div>
+
+              {/* Notes */}
+              {deal.notes && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Observações</h4>
+                  <div className="p-3 bg-secondary/30 rounded-lg">
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{deal.notes}</p>
+                  </div>
+                </div>
+              )}
 
               {/* Contact Info */}
               <div className="space-y-3">
@@ -251,10 +293,9 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
               )}
 
               {/* Actions */}
-              <div className="flex gap-2 pt-4 border-t border-border">
+              <div className="grid grid-cols-2 gap-2 pt-4 border-t border-border">
                 <Button 
                   variant="outline" 
-                  className="flex-1"
                   onClick={() => onEdit(deal)}
                 >
                   <Edit className="w-4 h-4 mr-2" />
@@ -262,7 +303,13 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="flex-1"
+                  onClick={handleDuplicate}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Duplicar
+                </Button>
+                <Button 
+                  variant="outline" 
                   onClick={() => setShowMoveDialog(true)}
                 >
                   <ArrowRightLeft className="w-4 h-4 mr-2" />
@@ -270,8 +317,7 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="flex-1"
-                  onClick={handleArchive}
+                  onClick={() => setShowArchiveConfirm(true)}
                 >
                   <Archive className="w-4 h-4 mr-2" />
                   Arquivar
@@ -324,6 +370,24 @@ export function DealDetailModal({ deal, pipeline, open, onClose, onEdit }: DealD
           </Tabs>
         </DialogContent>
       </Dialog>
+
+      {/* Archive Confirmation Dialog */}
+      <AlertDialog open={showArchiveConfirm} onOpenChange={setShowArchiveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Arquivar Negócio</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja arquivar "{deal.title}"? O negócio será movido para os arquivados e poderá ser restaurado posteriormente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleArchive}>
+              Arquivar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Move Dialog */}
       <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>

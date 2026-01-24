@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -20,12 +20,25 @@ import { CreateDealModal } from '@/components/deals/CreateDealModal';
 import { DealDetailModal } from '@/components/deals/DealDetailModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
+import { useDebounce } from '@/hooks/use-debounce';
+import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -50,7 +63,8 @@ interface KanbanBoardProps {
 type SortOption = 'recent' | 'value-high' | 'value-low';
 
 export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
-  const { addPhase, updatePhase, deletePhase, addDeal, updateDeal, deleteDeal, moveDeal, archiveDeal } = useCRMStore();
+  const { addPhase, updatePhase, deletePhase, addDeal, updateDeal, moveDeal } = useCRMStore();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
   const [showDealModal, setShowDealModal] = useState(false);
@@ -67,11 +81,20 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [temperatureFilter, setTemperatureFilter] = useState<Temperature | 'all'>('all');
   const [tagFilter, setTagFilter] = useState<string>('');
   const [valueMin, setValueMin] = useState('');
   const [valueMax, setValueMax] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>('recent');
+  const [showDeletePhaseConfirm, setShowDeletePhaseConfirm] = useState(false);
+  const [deletingPhaseId, setDeletingPhaseId] = useState<string | null>(null);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onNewDeal: () => handleOpenDealModal(),
+    onSearch: () => searchInputRef.current?.focus(),
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -103,9 +126,9 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
   const filteredDeals = useMemo(() => {
     let deals = [...pipeline.deals];
 
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    // Search filter (using debounced value)
+    if (debouncedSearch) {
+      const query = debouncedSearch.toLowerCase();
       deals = deals.filter(
         (d) =>
           d.title.toLowerCase().includes(query) ||
@@ -145,7 +168,7 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
     }
 
     return deals;
-  }, [pipeline.deals, searchQuery, temperatureFilter, tagFilter, valueMin, valueMax, sortOption]);
+  }, [pipeline.deals, debouncedSearch, temperatureFilter, tagFilter, valueMin, valueMax, sortOption]);
 
   const hasActiveFilters = searchQuery || temperatureFilter !== 'all' || tagFilter || valueMin || valueMax;
 
@@ -189,8 +212,19 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
   const handleAddPhase = () => {
     if (newPhaseName.trim()) {
       addPhase(pipeline.id, newPhaseName.trim());
+      toast({ title: 'Fase criada', description: `"${newPhaseName.trim()}" foi adicionada.` });
       setNewPhaseName('');
       setShowPhaseModal(false);
+    }
+  };
+
+  const handleConfirmDeletePhase = () => {
+    if (deletingPhaseId) {
+      const phase = pipeline.phases.find(p => p.id === deletingPhaseId);
+      deletePhase(pipeline.id, deletingPhaseId);
+      toast({ title: 'Fase excluída', description: `"${phase?.name}" foi removida. Negócios movidos para Entrada.` });
+      setDeletingPhaseId(null);
+      setShowDeletePhaseConfirm(false);
     }
   };
 
@@ -203,6 +237,7 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
   const handleSavePhase = () => {
     if (editingPhase && newPhaseName.trim()) {
       updatePhase(pipeline.id, editingPhase.id, newPhaseName.trim());
+      toast({ title: 'Fase atualizada', description: `Nome alterado para "${newPhaseName.trim()}".` });
       setEditingPhase(null);
       setNewPhaseName('');
       setShowEditPhaseModal(false);
@@ -231,8 +266,10 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
   const handleSubmitDeal = (dealData: Omit<Deal, 'id' | 'createdAt'>) => {
     if (editingDeal) {
       updateDeal(pipeline.id, editingDeal.id, dealData);
+      toast({ title: 'Negócio atualizado', description: `"${dealData.title}" foi salvo.` });
     } else {
       addDeal(pipeline.id, dealData);
+      toast({ title: 'Negócio criado', description: `"${dealData.title}" foi adicionado.` });
     }
   };
 
@@ -274,9 +311,10 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
+              ref={searchInputRef}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar negócios..."
+              placeholder="Buscar negócios... (pressione /)"
               className="pl-9"
             />
           </div>
@@ -405,7 +443,10 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
                 phase={phase}
                 deals={getDealsForPhase(phase.id)}
                 onEditPhase={handleEditPhase}
-                onDeletePhase={(phaseId) => deletePhase(pipeline.id, phaseId)}
+                onDeletePhase={(phaseId) => {
+                  setDeletingPhaseId(phaseId);
+                  setShowDeletePhaseConfirm(true);
+                }}
                 onDealClick={handleDealClick}
               />
             ))}
@@ -477,6 +518,24 @@ export function KanbanBoard({ pipeline, onBack }: KanbanBoardProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Phase Confirmation */}
+      <AlertDialog open={showDeletePhaseConfirm} onOpenChange={setShowDeletePhaseConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Fase</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta fase? Os negócios serão movidos automaticamente para a fase "Entrada".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDeletePhase} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Deal Modal */}
       <CreateDealModal

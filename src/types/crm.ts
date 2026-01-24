@@ -14,7 +14,9 @@ export type ActivityType =
   | 'archived'
   | 'restored'
   | 'temperature_changed'
-  | 'value_changed';
+  | 'value_changed'
+  | 'notes_updated'
+  | 'duplicated';
 
 export interface Activity {
   id: string;
@@ -31,6 +33,7 @@ export interface Activity {
     fromTemperature?: Temperature;
     toTemperature?: Temperature;
     fieldChanged?: string;
+    duplicatedFromId?: string;
   };
 }
 
@@ -48,6 +51,7 @@ export interface Deal {
   createdAt: string;
   phaseId: string;
   activities: Activity[];
+  notes?: string; // New field for notes/observations
   // For archived deals
   archivedAt?: string;
   archivedFromPipelineId?: string;
@@ -92,6 +96,7 @@ export interface CRMState {
   moveDeal: (pipelineId: string, dealId: string, newPhaseId: string) => void;
   moveDealToPipeline: (fromPipelineId: string, dealId: string, toPipelineId: string, toPhaseId: string) => void;
   archiveDeal: (pipelineId: string, dealId: string) => void;
+  duplicateDeal: (pipelineId: string, dealId: string) => void;
   
   archivedDeals: Deal[];
   restoreDeal: (dealId: string, pipelineId: string, phaseId: string) => void;

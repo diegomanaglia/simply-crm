@@ -7,10 +7,19 @@ import {
   BarChart3, 
   ChevronLeft,
   ChevronRight,
-  Briefcase
+  Briefcase,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useTheme } from '@/hooks/use-theme';
+import { KeyboardShortcutsHint } from '@/hooks/use-keyboard-shortcuts';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const menuItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -22,6 +31,7 @@ const menuItems = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <aside
@@ -56,7 +66,8 @@ export function Sidebar() {
       <nav className="flex-1 p-3 space-y-1">
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
-          return (
+          
+          const linkContent = (
             <NavLink
               key={item.path}
               to={item.path}
@@ -73,8 +84,64 @@ export function Sidebar() {
               )}
             </NavLink>
           );
+
+          if (collapsed) {
+            return (
+              <Tooltip key={item.path}>
+                <TooltipTrigger asChild>
+                  {linkContent}
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {item.name}
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return linkContent;
         })}
       </nav>
+
+      {/* Theme Toggle & Shortcuts */}
+      <div className="p-3 border-t border-sidebar-border space-y-2">
+        {/* Theme Toggle */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size={collapsed ? 'icon' : 'default'}
+              onClick={toggleTheme}
+              className={cn(
+                'text-sidebar-foreground hover:bg-sidebar-accent w-full',
+                collapsed ? 'justify-center' : 'justify-start gap-3'
+              )}
+            >
+              {theme === 'light' ? (
+                <Moon className="w-5 h-5 flex-shrink-0" />
+              ) : (
+                <Sun className="w-5 h-5 flex-shrink-0" />
+              )}
+              {!collapsed && (
+                <span className="font-medium text-sm">
+                  {theme === 'light' ? 'Modo Escuro' : 'Modo Claro'}
+                </span>
+              )}
+            </Button>
+          </TooltipTrigger>
+          {collapsed && (
+            <TooltipContent side="right">
+              {theme === 'light' ? 'Modo Escuro' : 'Modo Claro'}
+            </TooltipContent>
+          )}
+        </Tooltip>
+
+        {/* Keyboard Shortcuts Hint */}
+        {!collapsed && (
+          <div className="pt-2">
+            <KeyboardShortcutsHint />
+          </div>
+        )}
+      </div>
 
       {/* Footer */}
       {!collapsed && (
