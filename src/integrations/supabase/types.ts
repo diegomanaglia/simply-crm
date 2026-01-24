@@ -163,6 +163,245 @@ export type Database = {
           },
         ]
       }
+      google_ads_metrics: {
+        Row: {
+          avg_cpc_micros: number | null
+          campaign_id: string | null
+          clicks: number | null
+          conversion_value: number | null
+          conversions: number | null
+          cost_micros: number | null
+          created_at: string
+          ctr: number | null
+          date: string
+          id: string
+          impressions: number | null
+          integration_id: string
+        }
+        Insert: {
+          avg_cpc_micros?: number | null
+          campaign_id?: string | null
+          clicks?: number | null
+          conversion_value?: number | null
+          conversions?: number | null
+          cost_micros?: number | null
+          created_at?: string
+          ctr?: number | null
+          date: string
+          id?: string
+          impressions?: number | null
+          integration_id: string
+        }
+        Update: {
+          avg_cpc_micros?: number | null
+          campaign_id?: string | null
+          clicks?: number | null
+          conversion_value?: number | null
+          conversions?: number | null
+          cost_micros?: number | null
+          created_at?: string
+          ctr?: number | null
+          date?: string
+          id?: string
+          impressions?: number | null
+          integration_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_ads_metrics_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      google_campaign_mappings: {
+        Row: {
+          auto_tags: string[] | null
+          campaign_id: string
+          campaign_name: string
+          created_at: string
+          default_temperature: string | null
+          id: string
+          integration_id: string
+          is_active: boolean
+          phase_id: string | null
+          pipeline_id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_tags?: string[] | null
+          campaign_id: string
+          campaign_name: string
+          created_at?: string
+          default_temperature?: string | null
+          id?: string
+          integration_id: string
+          is_active?: boolean
+          phase_id?: string | null
+          pipeline_id: string
+          updated_at?: string
+        }
+        Update: {
+          auto_tags?: string[] | null
+          campaign_id?: string
+          campaign_name?: string
+          created_at?: string
+          default_temperature?: string | null
+          id?: string
+          integration_id?: string
+          is_active?: boolean
+          phase_id?: string | null
+          pipeline_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_campaign_mappings_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      google_integrations: {
+        Row: {
+          access_token: string
+          ads_accounts: Json | null
+          connected_at: string
+          id: string
+          refresh_token: string
+          selected_account_id: string | null
+          status: string
+          token_expires_at: string | null
+          updated_at: string
+          user_email: string
+          user_name: string | null
+          user_picture: string | null
+        }
+        Insert: {
+          access_token: string
+          ads_accounts?: Json | null
+          connected_at?: string
+          id?: string
+          refresh_token: string
+          selected_account_id?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_email: string
+          user_name?: string | null
+          user_picture?: string | null
+        }
+        Update: {
+          access_token?: string
+          ads_accounts?: Json | null
+          connected_at?: string
+          id?: string
+          refresh_token?: string
+          selected_account_id?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_email?: string
+          user_name?: string | null
+          user_picture?: string | null
+        }
+        Relationships: []
+      }
+      google_offline_conversions: {
+        Row: {
+          conversion_name: string
+          conversion_time: string
+          conversion_value: number
+          created_at: string
+          deal_id: string
+          gclid: string
+          google_response: Json | null
+          id: string
+          integration_id: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          conversion_name?: string
+          conversion_time: string
+          conversion_value: number
+          created_at?: string
+          deal_id: string
+          gclid: string
+          google_response?: Json | null
+          id?: string
+          integration_id: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          conversion_name?: string
+          conversion_time?: string
+          conversion_value?: number
+          created_at?: string
+          deal_id?: string
+          gclid?: string
+          google_response?: Json | null
+          id?: string
+          integration_id?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_offline_conversions_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      google_sync_logs: {
+        Row: {
+          completed_at: string | null
+          errors: Json | null
+          id: string
+          integration_id: string
+          records_synced: number | null
+          started_at: string
+          status: string
+          sync_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          errors?: Json | null
+          id?: string
+          integration_id: string
+          records_synced?: number | null
+          started_at?: string
+          status?: string
+          sync_type?: string
+        }
+        Update: {
+          completed_at?: string | null
+          errors?: Json | null
+          id?: string
+          integration_id?: string
+          records_synced?: number | null
+          started_at?: string
+          status?: string
+          sync_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_sync_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "google_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

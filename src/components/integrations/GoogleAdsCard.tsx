@@ -1,19 +1,15 @@
 import { useState } from 'react';
 import { 
-  Facebook, 
-  Settings2, 
   RefreshCw, 
   Check, 
   X, 
-  Copy,
-  ExternalLink,
   AlertCircle,
   Clock,
   ChevronDown,
   ChevronUp,
   Trash2,
   Edit2,
-  Plus
+  TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,44 +50,57 @@ import {
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useFacebookIntegration } from '@/hooks/use-facebook-integration';
+import { useGoogleIntegration } from '@/hooks/use-google-integration';
 import { useCRMStore } from '@/store/crmStore';
-import { FacebookFormMapping } from '@/types/facebook';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { GoogleCampaignMapping } from '@/types/google';
 import { EmptyState } from '@/components/ui/empty-state';
-import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { GoogleAdsCard } from '@/components/integrations/GoogleAdsCard';
 
-export default function IntegrationsPage() {
+// Google Ads logo SVG
+function GoogleAdsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      <path d="M12.92 19.26l5.92-10.24a2.78 2.78 0 0 0-1.02-3.8 2.78 2.78 0 0 0-3.8 1.02L8.1 16.48a2.78 2.78 0 0 0 1.02 3.8 2.78 2.78 0 0 0 3.8-1.02z" fill="#FBBC04"/>
+      <path d="M5.16 19.26l5.92-10.24a2.78 2.78 0 0 0-1.02-3.8 2.78 2.78 0 0 0-3.8 1.02L.34 16.48a2.78 2.78 0 0 0 1.02 3.8 2.78 2.78 0 0 0 3.8-1.02z" fill="#4285F4"/>
+      <circle cx="18.54" cy="17.29" r="2.78" fill="#34A853"/>
+    </svg>
+  );
+}
+
+interface GoogleAdsCardProps {
+  onOpenReports?: () => void;
+}
+
+export function GoogleAdsCard({ onOpenReports }: GoogleAdsCardProps) {
   const {
     integration,
-    formMappings,
+    campaignMappings,
     syncLogs,
-    loading,
     syncing,
-    connectFacebook,
-    disconnectFacebook,
-    saveFormMapping,
-    deleteFormMapping,
+    connectGoogle,
+    disconnectGoogle,
+    selectAdsAccount,
+    saveCampaignMapping,
+    deleteCampaignMapping,
     triggerSync,
-  } = useFacebookIntegration();
+    getReportMetrics,
+  } = useGoogleIntegration();
 
   const { pipelines } = useCRMStore();
   
   const [showMappingModal, setShowMappingModal] = useState(false);
-  const [editingMapping, setEditingMapping] = useState<FacebookFormMapping | null>(null);
+  const [editingMapping, setEditingMapping] = useState<GoogleCampaignMapping | null>(null);
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
   const [showLogsSection, setShowLogsSection] = useState(false);
   
   // Form state for mapping
   const [selectedPipeline, setSelectedPipeline] = useState<string>('');
   const [selectedPhase, setSelectedPhase] = useState<string>('');
-  const [autoTags, setAutoTags] = useState<string>('Facebook Leads');
+  const [autoTags, setAutoTags] = useState<string>('Google Ads');
   const [defaultTemp, setDefaultTemp] = useState<'cold' | 'warm' | 'hot'>('warm');
 
-  const handleEditMapping = (mapping: FacebookFormMapping) => {
+  const handleEditMapping = (mapping: GoogleCampaignMapping) => {
     setEditingMapping(mapping);
     setSelectedPipeline(mapping.pipeline_id);
     setSelectedPhase(mapping.phase_id || '');
@@ -103,7 +112,7 @@ export default function IntegrationsPage() {
   const handleSaveMapping = async () => {
     if (!editingMapping || !selectedPipeline) return;
     
-    await saveFormMapping({
+    await saveCampaignMapping({
       id: editingMapping.id,
       pipeline_id: selectedPipeline,
       phase_id: selectedPhase || null,
@@ -117,36 +126,27 @@ export default function IntegrationsPage() {
   };
 
   const selectedPipelineData = pipelines.find(p => p.id === selectedPipeline);
+  const metrics = getReportMetrics();
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <LoadingSpinner size="lg" text="Carregando integrações..." />
-      </div>
-    );
-  }
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Integrações</h1>
-        <p className="text-muted-foreground mt-1">
-          Conecte serviços externos para capturar leads automaticamente
-        </p>
-      </div>
-
-      {/* Facebook Lead Ads Card */}
+    <>
       <Card className="border-border">
         <CardHeader className="flex flex-row items-start justify-between space-y-0">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#1877F2] rounded-xl flex items-center justify-center">
-              <Facebook className="w-7 h-7 text-white" />
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border">
+              <GoogleAdsIcon className="w-7 h-7" />
             </div>
             <div>
-              <CardTitle className="text-lg">Facebook Lead Ads</CardTitle>
+              <CardTitle className="text-lg">Google Ads</CardTitle>
               <CardDescription>
-                Importe leads de formulários do Facebook automaticamente
+                Sincronize campanhas e envie conversões offline
               </CardDescription>
             </div>
           </div>
@@ -165,7 +165,6 @@ export default function IntegrationsPage() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Connection Status */}
           {integration?.status === 'connected' ? (
             <>
               {/* Connected Account Info */}
@@ -173,10 +172,10 @@ export default function IntegrationsPage() {
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={integration.user_picture || undefined} />
-                    <AvatarFallback>{integration.user_name[0]}</AvatarFallback>
+                    <AvatarFallback>{integration.user_email[0].toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium">{integration.user_name}</p>
+                    <p className="font-medium">{integration.user_name || integration.user_email}</p>
                     <p className="text-sm text-muted-foreground">
                       Conectado em {format(new Date(integration.connected_at), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
                     </p>
@@ -191,49 +190,72 @@ export default function IntegrationsPage() {
                 </Button>
               </div>
 
-              {/* Pages */}
-              {integration.pages.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-3">Páginas Vinculadas</h4>
-                  <div className="grid gap-2">
-                    {integration.pages.map((page) => (
-                      <div 
-                        key={page.id} 
-                        className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg"
-                      >
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={page.picture} />
-                          <AvatarFallback>{page.name[0]}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm font-medium">{page.name}</span>
-                      </div>
-                    ))}
+              {/* Account Selection */}
+              {integration.ads_accounts.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Conta Google Ads</Label>
+                  <Select 
+                    value={integration.selected_account_id || ''} 
+                    onValueChange={selectAdsAccount}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma conta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {integration.ads_accounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name} ({account.id})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Quick Metrics */}
+              {metrics.totalImpressions > 0 && (
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="p-3 bg-muted/30 rounded-lg text-center">
+                    <p className="text-2xl font-bold">{metrics.totalImpressions.toLocaleString('pt-BR')}</p>
+                    <p className="text-xs text-muted-foreground">Impressões</p>
+                  </div>
+                  <div className="p-3 bg-muted/30 rounded-lg text-center">
+                    <p className="text-2xl font-bold">{metrics.totalClicks.toLocaleString('pt-BR')}</p>
+                    <p className="text-xs text-muted-foreground">Cliques</p>
+                  </div>
+                  <div className="p-3 bg-muted/30 rounded-lg text-center">
+                    <p className="text-2xl font-bold">{formatCurrency(metrics.totalCost)}</p>
+                    <p className="text-xs text-muted-foreground">Investimento</p>
+                  </div>
+                  <div className="p-3 bg-muted/30 rounded-lg text-center">
+                    <p className="text-2xl font-bold">{metrics.totalConversions.toFixed(0)}</p>
+                    <p className="text-xs text-muted-foreground">Conversões</p>
                   </div>
                 </div>
               )}
 
               <Separator />
 
-              {/* Form Mappings */}
+              {/* Campaign Mappings */}
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h4 className="font-medium">Mapeamento de Formulários</h4>
+                    <h4 className="font-medium">Mapeamento de Campanhas</h4>
                     <p className="text-sm text-muted-foreground">
-                      Configure como os leads são importados para cada pipeline
+                      Associe campanhas a pipelines para rastrear leads
                     </p>
                   </div>
                 </div>
 
-                {formMappings.length === 0 ? (
+                {campaignMappings.length === 0 ? (
                   <EmptyState
-                    icon={Settings2}
-                    title="Nenhum formulário configurado"
-                    description="Formulários do Facebook Lead Ads aparecerão aqui após a sincronização"
+                    icon={TrendingUp}
+                    title="Nenhuma campanha configurada"
+                    description="Sincronize para ver suas campanhas ativas"
                   />
                 ) : (
                   <div className="space-y-3">
-                    {formMappings.map((mapping) => {
+                    {campaignMappings.map((mapping) => {
                       const pipeline = pipelines.find(p => p.id === mapping.pipeline_id);
                       const phase = pipeline?.phases.find(ph => ph.id === mapping.phase_id);
                       
@@ -244,10 +266,7 @@ export default function IntegrationsPage() {
                         >
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium">{mapping.form_name}</span>
-                              <Badge variant="outline" className="text-xs">
-                                {mapping.page_name}
-                              </Badge>
+                              <span className="font-medium">{mapping.campaign_name}</span>
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">
                               → {pipeline?.name || 'Pipeline não encontrado'} 
@@ -266,7 +285,7 @@ export default function IntegrationsPage() {
                             <Switch
                               checked={mapping.is_active}
                               onCheckedChange={(checked) => 
-                                saveFormMapping({ ...mapping, is_active: checked })
+                                saveCampaignMapping({ ...mapping, is_active: checked })
                               }
                             />
                             <Button 
@@ -279,7 +298,7 @@ export default function IntegrationsPage() {
                             <Button 
                               variant="ghost" 
                               size="icon"
-                              onClick={() => deleteFormMapping(mapping.id)}
+                              onClick={() => deleteCampaignMapping(mapping.id)}
                             >
                               <Trash2 className="w-4 h-4 text-destructive" />
                             </Button>
@@ -293,25 +312,46 @@ export default function IntegrationsPage() {
 
               <Separator />
 
+              {/* Offline Conversions Info */}
+              <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <h4 className="font-medium flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  Conversões Offline
+                </h4>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Quando um negócio for marcado como "Ganho", a conversão será enviada 
+                  automaticamente para o Google Ads usando o GCLID capturado.
+                </p>
+              </div>
+
+              <Separator />
+
               {/* Sync Controls */}
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="font-medium">Sincronização</h4>
                   <p className="text-sm text-muted-foreground">
-                    Leads são sincronizados automaticamente a cada 5 minutos
+                    Métricas são sincronizadas diariamente
                   </p>
                 </div>
-                <Button 
-                  onClick={triggerSync} 
-                  disabled={syncing}
-                  className="gap-2"
-                >
-                  <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-                  {syncing ? 'Sincronizando...' : 'Sincronizar Agora'}
-                </Button>
+                <div className="flex gap-2">
+                  {onOpenReports && (
+                    <Button variant="outline" onClick={onOpenReports}>
+                      Ver Relatórios
+                    </Button>
+                  )}
+                  <Button 
+                    onClick={() => triggerSync('metrics')} 
+                    disabled={syncing}
+                    className="gap-2"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                    {syncing ? 'Sincronizando...' : 'Sincronizar'}
+                  </Button>
+                </div>
               </div>
 
-              {/* Sync Logs Collapsible */}
+              {/* Sync Logs */}
               <Collapsible open={showLogsSection} onOpenChange={setShowLogsSection}>
                 <CollapsibleTrigger asChild>
                   <Button variant="ghost" className="w-full justify-between">
@@ -319,11 +359,7 @@ export default function IntegrationsPage() {
                       <Clock className="w-4 h-4" />
                       Histórico de Sincronizações
                     </span>
-                    {showLogsSection ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
+                    {showLogsSection ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="mt-4">
@@ -332,7 +368,7 @@ export default function IntegrationsPage() {
                       Nenhuma sincronização realizada ainda
                     </p>
                   ) : (
-                    <ScrollArea className="h-64">
+                    <ScrollArea className="h-48">
                       <div className="space-y-2">
                         {syncLogs.map((log) => (
                           <div 
@@ -348,24 +384,13 @@ export default function IntegrationsPage() {
                                 <AlertCircle className="w-4 h-4 text-yellow-500" />
                               )}
                               <div>
-                                <span className="font-medium">
-                                  {log.leads_imported} leads importados
-                                </span>
-                                {log.leads_duplicates > 0 && (
-                                  <span className="text-muted-foreground ml-2">
-                                    ({log.leads_duplicates} duplicados)
-                                  </span>
-                                )}
+                                <span className="font-medium">{log.records_synced} registros</span>
+                                <span className="text-muted-foreground ml-2">({log.sync_type})</span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Badge variant="outline" className="text-xs">
-                                {log.sync_type === 'manual' ? 'Manual' : 'Auto'}
-                              </Badge>
-                              <span>
-                                {format(new Date(log.started_at), "dd/MM HH:mm")}
-                              </span>
-                            </div>
+                            <span className="text-muted-foreground">
+                              {format(new Date(log.started_at), "dd/MM HH:mm")}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -378,37 +403,19 @@ export default function IntegrationsPage() {
             /* Not Connected State */
             <div className="text-center py-8">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <Facebook className="w-8 h-8 text-muted-foreground" />
+                <GoogleAdsIcon className="w-8 h-8" />
               </div>
-              <h3 className="font-medium mb-2">Conecte sua conta do Facebook</h3>
+              <h3 className="font-medium mb-2">Conecte sua conta do Google Ads</h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-                Importe leads automaticamente dos seus formulários de Lead Ads 
-                diretamente para seus pipelines
+                Sincronize métricas de campanhas e envie conversões offline 
+                automaticamente quando negócios forem ganhos
               </p>
-              <Button onClick={connectFacebook} className="gap-2">
-                <Facebook className="w-4 h-4" />
-                Conectar Facebook
+              <Button onClick={connectGoogle} className="gap-2">
+                <GoogleAdsIcon className="w-4 h-4" />
+                Conectar com Google
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Google Ads Card */}
-      <GoogleAdsCard />
-
-      {/* Future Integrations Placeholder */}
-      <Card className="border-dashed border-2 border-muted">
-        <CardContent className="py-8 text-center">
-          <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-            <Plus className="w-6 h-6 text-muted-foreground" />
-          </div>
-          <h3 className="font-medium text-muted-foreground mb-1">
-            Mais integrações em breve
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            LinkedIn, Instagram e mais...
-          </p>
         </CardContent>
       </Card>
 
@@ -418,15 +425,15 @@ export default function IntegrationsPage() {
           <DialogHeader>
             <DialogTitle>Configurar Mapeamento</DialogTitle>
             <DialogDescription>
-              Configure como os leads deste formulário serão importados
+              Configure como os leads desta campanha serão importados
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             {editingMapping && (
               <div className="p-3 bg-muted/50 rounded-lg">
-                <p className="font-medium">{editingMapping.form_name}</p>
-                <p className="text-sm text-muted-foreground">{editingMapping.page_name}</p>
+                <p className="font-medium">{editingMapping.campaign_name}</p>
+                <p className="text-sm text-muted-foreground">ID: {editingMapping.campaign_id}</p>
               </div>
             )}
             
@@ -469,7 +476,7 @@ export default function IntegrationsPage() {
               <Input 
                 value={autoTags}
                 onChange={(e) => setAutoTags(e.target.value)}
-                placeholder="Facebook Leads, Campanha X"
+                placeholder="Google Ads, Campanha X"
               />
               <p className="text-xs text-muted-foreground">
                 Separe múltiplas tags por vírgula
@@ -509,16 +516,16 @@ export default function IntegrationsPage() {
       <AlertDialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Desconectar Facebook?</AlertDialogTitle>
+            <AlertDialogTitle>Desconectar Google Ads?</AlertDialogTitle>
             <AlertDialogDescription>
-              Isso irá parar a sincronização automática de leads. 
-              Os leads já importados permanecerão no sistema.
+              Isso irá parar a sincronização de métricas e envio de conversões. 
+              Os dados já sincronizados permanecerão no sistema.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={disconnectFacebook}
+              onClick={disconnectGoogle}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Desconectar
@@ -526,6 +533,6 @@ export default function IntegrationsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
