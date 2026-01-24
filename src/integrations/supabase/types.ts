@@ -14,7 +14,155 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      facebook_form_mappings: {
+        Row: {
+          auto_tags: string[] | null
+          created_at: string
+          default_temperature: string | null
+          form_id: string
+          form_name: string
+          id: string
+          integration_id: string
+          is_active: boolean
+          page_id: string
+          page_name: string
+          phase_id: string | null
+          pipeline_id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_tags?: string[] | null
+          created_at?: string
+          default_temperature?: string | null
+          form_id: string
+          form_name: string
+          id?: string
+          integration_id: string
+          is_active?: boolean
+          page_id: string
+          page_name: string
+          phase_id?: string | null
+          pipeline_id: string
+          updated_at?: string
+        }
+        Update: {
+          auto_tags?: string[] | null
+          created_at?: string
+          default_temperature?: string | null
+          form_id?: string
+          form_name?: string
+          id?: string
+          integration_id?: string
+          is_active?: boolean
+          page_id?: string
+          page_name?: string
+          phase_id?: string | null
+          pipeline_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facebook_form_mappings_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "facebook_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facebook_integrations: {
+        Row: {
+          access_token: string
+          connected_at: string
+          expires_at: string | null
+          id: string
+          pages: Json | null
+          status: Database["public"]["Enums"]["integration_status"]
+          updated_at: string
+          user_id: string
+          user_name: string
+          user_picture: string | null
+        }
+        Insert: {
+          access_token: string
+          connected_at?: string
+          expires_at?: string | null
+          id?: string
+          pages?: Json | null
+          status?: Database["public"]["Enums"]["integration_status"]
+          updated_at?: string
+          user_id: string
+          user_name: string
+          user_picture?: string | null
+        }
+        Update: {
+          access_token?: string
+          connected_at?: string
+          expires_at?: string | null
+          id?: string
+          pages?: Json | null
+          status?: Database["public"]["Enums"]["integration_status"]
+          updated_at?: string
+          user_id?: string
+          user_name?: string
+          user_picture?: string | null
+        }
+        Relationships: []
+      }
+      facebook_sync_logs: {
+        Row: {
+          completed_at: string | null
+          errors: Json | null
+          form_mapping_id: string | null
+          id: string
+          integration_id: string
+          leads_duplicates: number
+          leads_imported: number
+          started_at: string
+          status: string
+          sync_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          errors?: Json | null
+          form_mapping_id?: string | null
+          id?: string
+          integration_id: string
+          leads_duplicates?: number
+          leads_imported?: number
+          started_at?: string
+          status?: string
+          sync_type?: string
+        }
+        Update: {
+          completed_at?: string | null
+          errors?: Json | null
+          form_mapping_id?: string | null
+          id?: string
+          integration_id?: string
+          leads_duplicates?: number
+          leads_imported?: number
+          started_at?: string
+          status?: string
+          sync_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facebook_sync_logs_form_mapping_id_fkey"
+            columns: ["form_mapping_id"]
+            isOneToOne: false
+            referencedRelation: "facebook_form_mappings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facebook_sync_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "facebook_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +171,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      integration_status: "connected" | "disconnected" | "error"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +298,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      integration_status: ["connected", "disconnected", "error"],
+    },
   },
 } as const
