@@ -1,8 +1,9 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Snowflake, Flame, Sun, Calendar } from 'lucide-react';
+import { Snowflake, Flame, Sun, Calendar, Facebook } from 'lucide-react';
 import { Deal, Temperature } from '@/types/crm';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface DealCardProps {
   deal: Deal;
@@ -63,6 +64,10 @@ export function DealCard({ deal, onClick }: DealCardProps) {
     }
   };
 
+  // Check if lead came from Facebook
+  const isFromFacebook = deal.source === 'Facebook Lead Ads' || 
+    deal.origin?.utmParams?.utm_source === 'facebook';
+
   return (
     <div
       ref={setNodeRef}
@@ -118,10 +123,18 @@ export function DealCard({ deal, onClick }: DealCardProps) {
         </div>
       )}
 
-      {/* Date */}
-      <div className="flex items-center gap-1 text-xs text-muted-foreground pt-2 border-t border-border/50">
-        <Calendar className="w-3 h-3" />
-        <span>{formatDate(deal.createdAt)}</span>
+      {/* Date and Origin Badge */}
+      <div className="flex items-center justify-between pt-2 border-t border-border/50">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Calendar className="w-3 h-3" />
+          <span>{formatDate(deal.createdAt)}</span>
+        </div>
+        {isFromFacebook && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-[#1877F2]/10 text-[#1877F2] border-[#1877F2]/30">
+            <Facebook className="w-2.5 h-2.5 mr-0.5" />
+            FB
+          </Badge>
+        )}
       </div>
     </div>
   );
