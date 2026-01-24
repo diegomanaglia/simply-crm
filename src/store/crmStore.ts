@@ -317,16 +317,22 @@ export const useCRMStore = create<CRMState>()(
       archiveDeal: (pipelineId: string, dealId: string) => {
         const pipeline = get().pipelines.find((p) => p.id === pipelineId);
         const deal = pipeline?.deals.find((d) => d.id === dealId);
-        if (!deal) return;
+        if (!deal || !pipeline) return;
+        
+        const phase = pipeline.phases.find((ph) => ph.id === deal.phaseId);
         
         const activity = createActivity(
           'archived',
           `Negócio arquivado do pipeline "${pipeline.name}"`
         );
         
-        const archivedDeal = {
+        const archivedDeal: Deal = {
           ...deal,
           activities: [...(deal.activities || []), activity],
+          archivedAt: new Date().toISOString(),
+          archivedFromPipelineId: pipelineId,
+          archivedFromPipelineName: pipeline.name,
+          archivedFromPhaseName: phase?.name || 'Desconhecida',
         };
 
         set((state) => ({
