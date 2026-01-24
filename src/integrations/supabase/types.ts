@@ -560,6 +560,45 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          language: string | null
+          onboarding_completed: boolean | null
+          plan: string | null
+          timezone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          language?: string | null
+          onboarding_completed?: boolean | null
+          plan?: string | null
+          timezone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          language?: string | null
+          onboarding_completed?: boolean | null
+          plan?: string | null
+          timezone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       webhook_logs: {
         Row: {
           attempt: number
