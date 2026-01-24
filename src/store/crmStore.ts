@@ -1,9 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CRMState, Pipeline, Phase, Deal } from '@/types/crm';
+import { CRMState, Pipeline, Phase, Deal, Activity } from '@/types/crm';
 import { generateMockData } from '@/utils/mockData';
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
+
+const createActivity = (type: Activity['type'], description: string, metadata?: Activity['metadata']): Activity => ({
+  id: generateId(),
+  type,
+  timestamp: new Date().toISOString(),
+  description,
+  metadata,
+});
 
 const createDefaultPhases = (): Phase[] => [
   { id: generateId(), name: 'Entrada', order: 0, isDefault: true, type: 'entry' },
@@ -20,6 +28,17 @@ export const useCRMStore = create<CRMState>()(
       pipelines: [],
       selectedPipelineId: null,
       archivedDeals: [],
+
+      getPhaseName: (pipelineId: string, phaseId: string) => {
+        const pipeline = get().pipelines.find((p) => p.id === pipelineId);
+        const phase = pipeline?.phases.find((ph) => ph.id === phaseId);
+        return phase?.name || 'Desconhecida';
+      },
+
+      getPipelineName: (pipelineId: string) => {
+        const pipeline = get().pipelines.find((p) => p.id === pipelineId);
+        return pipeline?.name || 'Desconhecido';
+      },
 
       addPipeline: (name: string) => {
         const newPipeline: Pipeline = {
@@ -107,14 +126,26 @@ export const useCRMStore = create<CRMState>()(
             if (phaseToDelete?.isDefault) return p;
             
             const entryPhase = p.phases.find((phase) => phase.type === 'entry');
+            const phaseName = phaseToDelete?.name || 'fase';
+            
             return {
               ...p,
               phases: p.phases.filter((phase) => phase.id !== phaseId),
-              deals: p.deals.map((deal) =>
-                deal.phaseId === phaseId
-                  ? { ...deal, phaseId: entryPhase?.id || p.phases[0].id }
-                  : deal
-              ),
+              deals: p.deals.map((deal) => {
+                if (deal.phaseId !== phaseId) return deal;
+                
+                const activity = createActivity(
+                  'phase_changed',
+                  `Movido de "${phaseName}" para "Entrada" (fase excluída)`,
+                  { fromPhase: phaseName, toPhase: 'Entrada' }
+                );
+                
+                return {
+                  ...deal,
+                  phaseId: entryPhase?.id || p.phases[0].id,
+                  activities: [...(deal.activities || []), activity],
+                };
+              }),
             };
           }),
         }));
@@ -128,11 +159,20 @@ export const useCRMStore = create<CRMState>()(
         }));
       },
 
-      addDeal: (pipelineId: string, deal: Omit<Deal, 'id' | 'createdAt'>) => {
+      addDeal: (pipelineId: string, deal: Omit<Deal, 'id' | 'createdAt' | 'activities'>) => {
+        const pipeline = get().pipelines.find((p) => p.id === pipelineId);
+        const phase = pipeline?.phases.find((ph) => ph.id === deal.phaseId);
+        
+        const creationActivity = createActivity(
+          'created',
+          `Negócio criado na fase "${phase?.name || 'Entrada'}"`
+        );
+        
         const newDeal: Deal = {
           ...deal,
           id: generateId(),
           createdAt: new Date().toISOString(),
+          activities: [creationActivity],
         };
         set((state) => ({
           pipelines: state.pipelines.map((p) =>
@@ -143,16 +183,54 @@ export const useCRMStore = create<CRMState>()(
 
       updateDeal: (pipelineId: string, dealId: string, dealUpdate: Partial<Deal>) => {
         set((state) => ({
-          pipelines: state.pipelines.map((p) =>
-            p.id === pipelineId
-              ? {
-                  ...p,
-                  deals: p.deals.map((d) =>
-                    d.id === dealId ? { ...d, ...dealUpdate } : d
-                  ),
+          pipelines: state.pipelines.map((p) => {
+            if (p.id !== pipelineId) return p;
+            
+            return {
+              ...p,
+              deals: p.deals.map((d) => {
+                if (d.id !== dealId) return d;
+                
+                const activities = [...(d.activities || [])];
+                
+                // Track value changes
+                if (dealUpdate.value !== undefined && dealUpdate.value !== d.value) {
+                  activities.push(createActivity(
+                    'value_changed',
+                    `Valor alterado de R$ ${d.value.toLocaleString('pt-BR')} para R$ ${dealUpdate.value.toLocaleString('pt-BR')}`,
+                    { fromValue: d.value, toValue: dealUpdate.value }
+                  ));
                 }
-              : p
-          ),
+                
+                // Track temperature changes
+                if (dealUpdate.temperature && dealUpdate.temperature !== d.temperature) {
+                  const tempNames = { cold: 'Frio', warm: 'Morno', hot: 'Quente' };
+                  activities.push(createActivity(
+                    'temperature_changed',
+                    `Temperatura alterada de "${tempNames[d.temperature]}" para "${tempNames[dealUpdate.temperature]}"`,
+                    { fromTemperature: d.temperature, toTemperature: dealUpdate.temperature }
+                  ));
+                }
+                
+                // Track general info updates
+                const fieldsChanged: string[] = [];
+                if (dealUpdate.title && dealUpdate.title !== d.title) fieldsChanged.push('título');
+                if (dealUpdate.contactName && dealUpdate.contactName !== d.contactName) fieldsChanged.push('contato');
+                if (dealUpdate.email && dealUpdate.email !== d.email) fieldsChanged.push('email');
+                if (dealUpdate.phone && dealUpdate.phone !== d.phone) fieldsChanged.push('telefone');
+                
+                if (fieldsChanged.length > 0) {
+                  activities.push(createActivity(
+                    'info_updated',
+                    `Informações atualizadas: ${fieldsChanged.join(', ')}`,
+                    { fieldChanged: fieldsChanged.join(', ') }
+                  ));
+                }
+                
+                return { ...d, ...dealUpdate, activities };
+              }),
+            };
+          }),
         }));
       },
 
@@ -168,16 +246,71 @@ export const useCRMStore = create<CRMState>()(
 
       moveDeal: (pipelineId: string, dealId: string, newPhaseId: string) => {
         set((state) => ({
-          pipelines: state.pipelines.map((p) =>
-            p.id === pipelineId
-              ? {
-                  ...p,
-                  deals: p.deals.map((d) =>
-                    d.id === dealId ? { ...d, phaseId: newPhaseId } : d
-                  ),
-                }
-              : p
-          ),
+          pipelines: state.pipelines.map((p) => {
+            if (p.id !== pipelineId) return p;
+            
+            return {
+              ...p,
+              deals: p.deals.map((d) => {
+                if (d.id !== dealId || d.phaseId === newPhaseId) return d;
+                
+                const fromPhase = p.phases.find((ph) => ph.id === d.phaseId);
+                const toPhase = p.phases.find((ph) => ph.id === newPhaseId);
+                
+                const activity = createActivity(
+                  'phase_changed',
+                  `Movido de "${fromPhase?.name}" para "${toPhase?.name}"`,
+                  { fromPhase: fromPhase?.name, toPhase: toPhase?.name }
+                );
+                
+                return {
+                  ...d,
+                  phaseId: newPhaseId,
+                  activities: [...(d.activities || []), activity],
+                };
+              }),
+            };
+          }),
+        }));
+      },
+
+      moveDealToPipeline: (fromPipelineId: string, dealId: string, toPipelineId: string, toPhaseId: string) => {
+        const fromPipeline = get().pipelines.find((p) => p.id === fromPipelineId);
+        const toPipeline = get().pipelines.find((p) => p.id === toPipelineId);
+        const deal = fromPipeline?.deals.find((d) => d.id === dealId);
+        
+        if (!deal || !fromPipeline || !toPipeline) return;
+        
+        const fromPhase = fromPipeline.phases.find((ph) => ph.id === deal.phaseId);
+        const toPhase = toPipeline.phases.find((ph) => ph.id === toPhaseId);
+        
+        const activity = createActivity(
+          'pipeline_changed',
+          `Movido do pipeline "${fromPipeline.name}" (${fromPhase?.name}) para "${toPipeline.name}" (${toPhase?.name})`,
+          { 
+            fromPipeline: fromPipeline.name, 
+            toPipeline: toPipeline.name,
+            fromPhase: fromPhase?.name,
+            toPhase: toPhase?.name,
+          }
+        );
+        
+        const updatedDeal = {
+          ...deal,
+          phaseId: toPhaseId,
+          activities: [...(deal.activities || []), activity],
+        };
+        
+        set((state) => ({
+          pipelines: state.pipelines.map((p) => {
+            if (p.id === fromPipelineId) {
+              return { ...p, deals: p.deals.filter((d) => d.id !== dealId) };
+            }
+            if (p.id === toPipelineId) {
+              return { ...p, deals: [...p.deals, updatedDeal] };
+            }
+            return p;
+          }),
         }));
       },
 
@@ -185,9 +318,19 @@ export const useCRMStore = create<CRMState>()(
         const pipeline = get().pipelines.find((p) => p.id === pipelineId);
         const deal = pipeline?.deals.find((d) => d.id === dealId);
         if (!deal) return;
+        
+        const activity = createActivity(
+          'archived',
+          `Negócio arquivado do pipeline "${pipeline.name}"`
+        );
+        
+        const archivedDeal = {
+          ...deal,
+          activities: [...(deal.activities || []), activity],
+        };
 
         set((state) => ({
-          archivedDeals: [...state.archivedDeals, deal],
+          archivedDeals: [...state.archivedDeals, archivedDeal],
           pipelines: state.pipelines.map((p) =>
             p.id === pipelineId
               ? { ...p, deals: p.deals.filter((d) => d.id !== dealId) }
@@ -198,13 +341,27 @@ export const useCRMStore = create<CRMState>()(
 
       restoreDeal: (dealId: string, pipelineId: string, phaseId: string) => {
         const deal = get().archivedDeals.find((d) => d.id === dealId);
-        if (!deal) return;
+        const pipeline = get().pipelines.find((p) => p.id === pipelineId);
+        const phase = pipeline?.phases.find((ph) => ph.id === phaseId);
+        
+        if (!deal || !pipeline) return;
+        
+        const activity = createActivity(
+          'restored',
+          `Negócio restaurado para o pipeline "${pipeline.name}" na fase "${phase?.name}"`
+        );
+        
+        const restoredDeal = {
+          ...deal,
+          phaseId,
+          activities: [...(deal.activities || []), activity],
+        };
 
         set((state) => ({
           archivedDeals: state.archivedDeals.filter((d) => d.id !== dealId),
           pipelines: state.pipelines.map((p) =>
             p.id === pipelineId
-              ? { ...p, deals: [...p.deals, { ...deal, phaseId }] }
+              ? { ...p, deals: [...p.deals, restoredDeal] }
               : p
           ),
         }));
