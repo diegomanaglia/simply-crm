@@ -28,7 +28,6 @@ const menuItems = [
   { name: 'Pipelines', path: '/pipelines', icon: GitBranch },
   { name: 'Leads Arquivados', path: '/archived', icon: Archive },
   { name: 'Relatórios', path: '/reports', icon: BarChart3 },
-  { name: 'Analytics', path: '/analytics', icon: BarChart3 },
   { name: 'Integrações', path: '/integrations', icon: Link2 },
   { name: 'Configurações', path: '/settings', icon: Settings },
 ];
