@@ -6,6 +6,7 @@ export interface UTMParams {
   utm_campaign?: string;
   utm_content?: string;
   utm_term?: string;
+  gclid?: string; // Google Click ID for offline conversions
 }
 
 export interface LeadOrigin {
@@ -16,6 +17,7 @@ export interface LeadOrigin {
   os?: string;
   landingPage?: string;
   capturedAt: string;
+  gclid?: string; // Separate field for easy access
 }
 
 export interface CaptureFormData {
@@ -37,7 +39,7 @@ export function captureUTMParams(): UTMParams {
   
   const utmParams: UTMParams = {};
   
-  const params = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
+  const params = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid'] as const;
   
   params.forEach((param) => {
     const value = urlParams.get(param);
@@ -46,9 +48,14 @@ export function captureUTMParams(): UTMParams {
     }
   });
   
-  // Only store if we have any UTM params
+  // Only store if we have any UTM params or gclid
   if (Object.keys(utmParams).length > 0) {
     sessionStorage.setItem('crm_utm_params', JSON.stringify(utmParams));
+    
+    // Store gclid separately for easy access (important for Google Ads conversions)
+    if (utmParams.gclid) {
+      sessionStorage.setItem('crm_gclid', utmParams.gclid);
+    }
   }
   
   return utmParams;
@@ -61,6 +68,15 @@ export function getStoredUTMParams(): UTMParams {
     return stored ? JSON.parse(stored) : {};
   } catch {
     return {};
+  }
+}
+
+// Get stored gclid
+export function getStoredGclid(): string | null {
+  try {
+    return sessionStorage.getItem('crm_gclid');
+  } catch {
+    return null;
   }
 }
 
@@ -107,14 +123,18 @@ export function getOS(): string {
 
 // Collect all origin data
 export function collectLeadOrigin(): LeadOrigin {
+  const utmParams = getStoredUTMParams();
+  const gclid = getStoredGclid();
+  
   return {
-    utmParams: getStoredUTMParams(),
+    utmParams,
     referrer: document.referrer || undefined,
     device: getDeviceType(),
     browser: getBrowser(),
     os: getOS(),
     landingPage: window.location.href,
     capturedAt: new Date().toISOString(),
+    gclid: gclid || utmParams.gclid,
   };
 }
 
@@ -163,12 +183,12 @@ export function generateSourceTags(origin: LeadOrigin): Tag[] {
   return tags;
 }
 
-// Generate tracking script for embedding
+// Generate tracking script for embedding (updated to capture gclid)
 export function generateTrackingScript(baseUrl: string): string {
   return `<!-- Simply CRM Tracking Script -->
 <script>
 (function() {
-  var params = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+  var params = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid'];
   var urlParams = new URLSearchParams(window.location.search);
   var utmData = {};
   
@@ -179,6 +199,9 @@ export function generateTrackingScript(baseUrl: string): string {
   
   if (Object.keys(utmData).length > 0) {
     sessionStorage.setItem('crm_utm_params', JSON.stringify(utmData));
+    if (utmData.gclid) {
+      sessionStorage.setItem('crm_gclid', utmData.gclid);
+    }
   }
 })();
 </script>`;
