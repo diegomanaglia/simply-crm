@@ -55,6 +55,7 @@ export type Database = {
           id: string
           tracking_enabled: boolean
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -63,6 +64,7 @@ export type Database = {
           id?: string
           tracking_enabled?: boolean
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -71,6 +73,7 @@ export type Database = {
           id?: string
           tracking_enabled?: boolean
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -136,6 +139,7 @@ export type Database = {
           connected_at: string
           expires_at: string | null
           id: string
+          owner_id: string | null
           pages: Json | null
           status: Database["public"]["Enums"]["integration_status"]
           updated_at: string
@@ -148,6 +152,7 @@ export type Database = {
           connected_at?: string
           expires_at?: string | null
           id?: string
+          owner_id?: string | null
           pages?: Json | null
           status?: Database["public"]["Enums"]["integration_status"]
           updated_at?: string
@@ -160,6 +165,7 @@ export type Database = {
           connected_at?: string
           expires_at?: string | null
           id?: string
+          owner_id?: string | null
           pages?: Json | null
           status?: Database["public"]["Enums"]["integration_status"]
           updated_at?: string
@@ -338,6 +344,7 @@ export type Database = {
           token_expires_at: string | null
           updated_at: string
           user_email: string
+          user_id: string | null
           user_name: string | null
           user_picture: string | null
         }
@@ -352,6 +359,7 @@ export type Database = {
           token_expires_at?: string | null
           updated_at?: string
           user_email: string
+          user_id?: string | null
           user_name?: string | null
           user_picture?: string | null
         }
@@ -366,6 +374,7 @@ export type Database = {
           token_expires_at?: string | null
           updated_at?: string
           user_email?: string
+          user_id?: string | null
           user_name?: string | null
           user_picture?: string | null
         }
@@ -523,6 +532,7 @@ export type Database = {
           requests_today: number
           secret_token: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -540,6 +550,7 @@ export type Database = {
           requests_today?: number
           secret_token?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -557,6 +568,7 @@ export type Database = {
           requests_today?: number
           secret_token?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -668,6 +680,7 @@ export type Database = {
           secret_key: string | null
           updated_at: string
           url: string
+          user_id: string | null
         }
         Insert: {
           consecutive_failures?: number
@@ -687,6 +700,7 @@ export type Database = {
           secret_key?: string | null
           updated_at?: string
           url: string
+          user_id?: string | null
         }
         Update: {
           consecutive_failures?: number
@@ -706,6 +720,7 @@ export type Database = {
           secret_key?: string | null
           updated_at?: string
           url?: string
+          user_id?: string | null
         }
         Relationships: []
       }
