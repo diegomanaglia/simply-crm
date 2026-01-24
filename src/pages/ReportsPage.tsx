@@ -203,21 +203,7 @@ export default function ReportsPage() {
           <p className="text-muted-foreground">Análise detalhada do seu pipeline</p>
         </div>
         
-        {/* Export Button */}
-        <Button
-          variant="outline"
-          onClick={() => {
-            exportDealsToCSV(tableDeals, 'relatorio-crm');
-            toast({ title: 'Relatório exportado', description: 'O arquivo CSV foi baixado.' });
-          }}
-          disabled={tableDeals.length === 0}
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Exportar CSV
-        </Button>
-        </div>
-        
-        {/* Filters */}
+        {/* Filters and Export */}
         <div className="flex flex-wrap items-center gap-3">
           <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as PeriodFilter)}>
             <SelectTrigger className="w-[160px]">
@@ -244,6 +230,18 @@ export default function ReportsPage() {
               ))}
             </SelectContent>
           </Select>
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              exportDealsToCSV(tableDeals, 'relatorio-crm');
+              toast({ title: 'Relatório exportado', description: 'O arquivo CSV foi baixado.' });
+            }}
+            disabled={tableDeals.length === 0}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Exportar CSV
+          </Button>
         </div>
       </div>
 
