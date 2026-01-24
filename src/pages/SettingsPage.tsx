@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -23,8 +24,10 @@ import {
   Link, 
   Code, 
   Eye,
-  GitBranch
+  GitBranch,
+  BarChart3
 } from 'lucide-react';
+import { GoogleAnalyticsCard } from '@/components/integrations/GoogleAnalyticsCard';
 
 export default function SettingsPage() {
   const { pipelines, captureSettings, toggleCaptureSettings } = useCRMStore();
@@ -81,108 +84,120 @@ export default function SettingsPage() {
           <Settings className="w-6 h-6" />
           Configurações
         </h1>
-        <p className="text-muted-foreground">Gerencie os formulários de captura de leads</p>
+        <p className="text-muted-foreground">Gerencie formulários de captura e rastreamento</p>
       </div>
 
-      {/* Tracking Script Section */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Code className="w-5 h-5 text-primary" />
-            Script de Rastreamento UTM
-          </CardTitle>
-          <CardDescription>
-            Adicione este script ao seu site para capturar automaticamente parâmetros UTM
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowScript(true)}>
-              <Eye className="w-4 h-4 mr-2" />
-              Ver Script
-            </Button>
-            <Button variant="outline" onClick={handleCopyScript}>
-              <Copy className="w-4 h-4 mr-2" />
-              Copiar Script
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="capture" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="capture">Formulários de Captura</TabsTrigger>
+          <TabsTrigger value="analytics">Google Analytics</TabsTrigger>
+        </TabsList>
 
-      {/* Pipelines List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Link className="w-5 h-5 text-primary" />
-            Formulários de Captura por Pipeline
-          </CardTitle>
-          <CardDescription>
-            Configure quais pipelines podem receber leads via formulário público
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {pipelines.length === 0 ? (
-            <EmptyState
-              icon={GitBranch}
-              title="Nenhum pipeline"
-              description="Crie um pipeline para configurar formulários de captura"
-              className="border-0"
-            />
-          ) : (
-            <div className="space-y-4">
-              {pipelines.map((pipeline) => (
-                <div
-                  key={pipeline.id}
-                  className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium text-foreground">{pipeline.name}</h4>
-                      <Badge variant={isEnabled(pipeline.id) ? 'default' : 'secondary'}>
-                        {isEnabled(pipeline.id) ? 'Ativo' : 'Inativo'}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate max-w-md">
-                      {getCaptureUrl(pipeline.id)}
-                    </p>
-                  </div>
+        <TabsContent value="capture" className="space-y-6">
+          {/* Tracking Script Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Code className="w-5 h-5 text-primary" />
+                Script de Rastreamento UTM
+              </CardTitle>
+              <CardDescription>
+                Adicione este script ao seu site para capturar automaticamente parâmetros UTM e GCLID
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowScript(true)}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  Ver Script
+                </Button>
+                <Button variant="outline" onClick={handleCopyScript}>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copiar Script
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={isEnabled(pipeline.id)}
-                        onCheckedChange={(checked) => handleToggle(pipeline.id, checked)}
-                      />
-                      <Label className="text-sm">Ativo</Label>
+          {/* Pipelines List */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Link className="w-5 h-5 text-primary" />
+                Formulários de Captura por Pipeline
+              </CardTitle>
+              <CardDescription>
+                Configure quais pipelines podem receber leads via formulário público
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {pipelines.length === 0 ? (
+                <EmptyState
+                  icon={GitBranch}
+                  title="Nenhum pipeline"
+                  description="Crie um pipeline para configurar formulários de captura"
+                  className="border-0"
+                />
+              ) : (
+                <div className="space-y-4">
+                  {pipelines.map((pipeline) => (
+                    <div
+                      key={pipeline.id}
+                      className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-foreground">{pipeline.name}</h4>
+                          <Badge variant={isEnabled(pipeline.id) ? 'default' : 'secondary'}>
+                            {isEnabled(pipeline.id) ? 'Ativo' : 'Inativo'}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate max-w-md">
+                          {getCaptureUrl(pipeline.id)}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={isEnabled(pipeline.id)}
+                            onCheckedChange={(checked) => handleToggle(pipeline.id, checked)}
+                          />
+                          <Label className="text-sm">Ativo</Label>
+                        </div>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openPreview(pipeline.id)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCopyUrl(pipeline.id)}
+                        >
+                          {copiedId === pipeline.id ? (
+                            <Check className="w-4 h-4 text-success" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openPreview(pipeline.id)}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCopyUrl(pipeline.id)}
-                    >
-                      {copiedId === pipeline.id ? (
-                        <Check className="w-4 h-4 text-success" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
+        <TabsContent value="analytics">
+          <GoogleAnalyticsCard />
+        </TabsContent>
+      </Tabs>
       {/* Script Preview Dialog */}
       <Dialog open={showScript} onOpenChange={setShowScript}>
         <DialogContent className="max-w-2xl">

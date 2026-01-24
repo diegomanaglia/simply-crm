@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          campaign: string | null
+          created_at: string
+          deal_id: string | null
+          event_name: string
+          event_params: Json
+          id: string
+          pipeline_id: string | null
+          source: string | null
+        }
+        Insert: {
+          campaign?: string | null
+          created_at?: string
+          deal_id?: string | null
+          event_name: string
+          event_params?: Json
+          id?: string
+          pipeline_id?: string | null
+          source?: string | null
+        }
+        Update: {
+          campaign?: string | null
+          created_at?: string
+          deal_id?: string | null
+          event_name?: string
+          event_params?: Json
+          id?: string
+          pipeline_id?: string | null
+          source?: string | null
+        }
+        Relationships: []
+      }
+      analytics_settings: {
+        Row: {
+          created_at: string
+          ga4_measurement_id: string | null
+          goals_configured: boolean
+          id: string
+          tracking_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ga4_measurement_id?: string | null
+          goals_configured?: boolean
+          id?: string
+          tracking_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ga4_measurement_id?: string | null
+          goals_configured?: boolean
+          id?: string
+          tracking_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       facebook_form_mappings: {
         Row: {
           auto_tags: string[] | null
