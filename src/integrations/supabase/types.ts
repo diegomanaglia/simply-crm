@@ -462,6 +462,214 @@ export type Database = {
           },
         ]
       }
+      inbound_webhook_logs: {
+        Row: {
+          created_at: string
+          deal_created_id: string | null
+          error_message: string | null
+          id: string
+          inbound_webhook_id: string
+          mapped_data: Json | null
+          payload: Json
+          source_ip: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          deal_created_id?: string | null
+          error_message?: string | null
+          id?: string
+          inbound_webhook_id: string
+          mapped_data?: Json | null
+          payload: Json
+          source_ip?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          deal_created_id?: string | null
+          error_message?: string | null
+          id?: string
+          inbound_webhook_id?: string
+          mapped_data?: Json | null
+          payload?: Json
+          source_ip?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbound_webhook_logs_inbound_webhook_id_fkey"
+            columns: ["inbound_webhook_id"]
+            isOneToOne: false
+            referencedRelation: "inbound_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inbound_webhooks: {
+        Row: {
+          created_at: string
+          default_tags: string[] | null
+          default_temperature: string | null
+          field_mappings: Json
+          hmac_secret: string | null
+          id: string
+          ip_whitelist: string[] | null
+          is_active: boolean
+          last_request_at: string | null
+          name: string
+          phase_id: string | null
+          pipeline_id: string
+          requests_today: number
+          secret_token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_tags?: string[] | null
+          default_temperature?: string | null
+          field_mappings?: Json
+          hmac_secret?: string | null
+          id?: string
+          ip_whitelist?: string[] | null
+          is_active?: boolean
+          last_request_at?: string | null
+          name: string
+          phase_id?: string | null
+          pipeline_id: string
+          requests_today?: number
+          secret_token?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_tags?: string[] | null
+          default_temperature?: string | null
+          field_mappings?: Json
+          hmac_secret?: string | null
+          id?: string
+          ip_whitelist?: string[] | null
+          is_active?: boolean
+          last_request_at?: string | null
+          name?: string
+          phase_id?: string | null
+          pipeline_id?: string
+          requests_today?: number
+          secret_token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      webhook_logs: {
+        Row: {
+          attempt: number
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+          response_time_ms: number | null
+          status: string
+          webhook_id: string
+        }
+        Insert: {
+          attempt?: number
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload: Json
+          response_body?: string | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          status?: string
+          webhook_id: string
+        }
+        Update: {
+          attempt?: number
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          status?: string
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhooks: {
+        Row: {
+          consecutive_failures: number
+          created_at: string
+          events: string[]
+          headers: Json | null
+          id: string
+          ip_whitelist: string[] | null
+          is_active: boolean
+          last_error: string | null
+          last_success_at: string | null
+          last_triggered_at: string | null
+          max_retries: number
+          method: string
+          name: string
+          retry_enabled: boolean
+          secret_key: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          created_at?: string
+          events?: string[]
+          headers?: Json | null
+          id?: string
+          ip_whitelist?: string[] | null
+          is_active?: boolean
+          last_error?: string | null
+          last_success_at?: string | null
+          last_triggered_at?: string | null
+          max_retries?: number
+          method?: string
+          name: string
+          retry_enabled?: boolean
+          secret_key?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          consecutive_failures?: number
+          created_at?: string
+          events?: string[]
+          headers?: Json | null
+          id?: string
+          ip_whitelist?: string[] | null
+          is_active?: boolean
+          last_error?: string | null
+          last_success_at?: string | null
+          last_triggered_at?: string | null
+          max_retries?: number
+          method?: string
+          name?: string
+          retry_enabled?: boolean
+          secret_key?: string | null
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
