@@ -37,6 +37,22 @@ export interface Activity {
   };
 }
 
+export interface LeadOrigin {
+  utmParams?: {
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    utm_term?: string;
+  };
+  referrer?: string;
+  device?: 'desktop' | 'mobile' | 'tablet';
+  browser?: string;
+  os?: string;
+  landingPage?: string;
+  capturedAt?: string;
+}
+
 export interface Deal {
   id: string;
   title: string;
@@ -51,7 +67,9 @@ export interface Deal {
   createdAt: string;
   phaseId: string;
   activities: Activity[];
-  notes?: string; // New field for notes/observations
+  notes?: string;
+  origin?: LeadOrigin; // New field for lead origin tracking
+  company?: string; // Optional company name
   // For archived deals
   archivedAt?: string;
   archivedFromPipelineId?: string;
@@ -75,9 +93,15 @@ export interface Pipeline {
   createdAt: string;
 }
 
+export interface PipelineCaptureSettings {
+  pipelineId: string;
+  enabled: boolean;
+}
+
 export interface CRMState {
   pipelines: Pipeline[];
   selectedPipelineId: string | null;
+  captureSettings: PipelineCaptureSettings[];
   
   // Actions
   addPipeline: (name: string) => void;
@@ -91,6 +115,7 @@ export interface CRMState {
   reorderPhases: (pipelineId: string, phases: Phase[]) => void;
   
   addDeal: (pipelineId: string, deal: Omit<Deal, 'id' | 'createdAt' | 'activities'>) => void;
+  addDealFromCapture: (pipelineId: string, deal: Omit<Deal, 'id' | 'createdAt' | 'activities' | 'phaseId'>) => void;
   updateDeal: (pipelineId: string, dealId: string, deal: Partial<Deal>) => void;
   deleteDeal: (pipelineId: string, dealId: string) => void;
   moveDeal: (pipelineId: string, dealId: string, newPhaseId: string) => void;
@@ -100,6 +125,10 @@ export interface CRMState {
   
   archivedDeals: Deal[];
   restoreDeal: (dealId: string, pipelineId: string, phaseId: string) => void;
+  
+  // Capture settings
+  toggleCaptureSettings: (pipelineId: string, enabled: boolean) => void;
+  getCaptureSettings: (pipelineId: string) => PipelineCaptureSettings | undefined;
   
   // Helper to get phase/pipeline names
   getPhaseName: (pipelineId: string, phaseId: string) => string;

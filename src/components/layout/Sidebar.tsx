@@ -9,7 +9,8 @@ import {
   ChevronRight,
   Briefcase,
   Moon,
-  Sun
+  Sun,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ const menuItems = [
   { name: 'Pipelines', path: '/pipelines', icon: GitBranch },
   { name: 'Leads Arquivados', path: '/archived', icon: Archive },
   { name: 'Relatórios', path: '/reports', icon: BarChart3 },
+  { name: 'Configurações', path: '/settings', icon: Settings },
 ];
 
 export function Sidebar() {

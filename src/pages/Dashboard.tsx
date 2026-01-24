@@ -1,7 +1,8 @@
 import { useCRMStore } from '@/store/crmStore';
-import { TrendingUp, Users, DollarSign, Target, ArrowUpRight, Trophy, Flame } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { TrendingUp, Users, DollarSign, Target, Trophy, Flame, Globe } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Deal } from '@/types/crm';
+import { useMemo } from 'react';
 
 export default function Dashboard() {
   const { pipelines, archivedDeals } = useCRMStore();
@@ -67,6 +68,22 @@ export default function Dashboard() {
     { name: 'Morno', value: allDeals.filter((d) => d.temperature === 'warm').length, color: '#f59e0b' },
     { name: 'Quente', value: allDeals.filter((d) => d.temperature === 'hot').length, color: '#ef4444' },
   ].filter((d) => d.value > 0);
+
+  // Source distribution (Leads by Source) - this month
+  const sourceData = useMemo(() => {
+    const sourceMap = new Map<string, number>();
+    
+    allDeals.forEach((deal) => {
+      const source = deal.origin?.utmParams?.utm_source || deal.source || 'Direto';
+      const sourceName = source.charAt(0).toUpperCase() + source.slice(1).toLowerCase();
+      sourceMap.set(sourceName, (sourceMap.get(sourceName) || 0) + 1);
+    });
+    
+    return Array.from(sourceMap.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  }, [allDeals]);
 
   // Last 5 deals created
   const recentDeals = pipelines
@@ -167,26 +184,26 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pie Chart - Temperature Distribution */}
         <div className="bg-card border border-border rounded-xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <Flame className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-foreground">Distribuição por Temperatura</h3>
+            <h3 className="font-semibold text-foreground">Por Temperatura</h3>
           </div>
           {temperatureData.length === 0 ? (
-            <div className="flex items-center justify-center h-64 text-muted-foreground">
+            <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
               Adicione negócios para ver o gráfico
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie
                   data={temperatureData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
+                  innerRadius={50}
+                  outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
@@ -204,10 +221,37 @@ export default function Dashboard() {
                     borderRadius: '8px',
                   }}
                 />
-                <Legend
-                  formatter={(value) => <span className="text-foreground text-sm">{value}</span>}
-                />
               </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Bar Chart - Leads by Source */}
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Globe className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold text-foreground">Leads por Fonte</h3>
+          </div>
+          {sourceData.length === 0 ? (
+            <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
+              Nenhum lead com fonte registrada
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={sourceData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" />
+                <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  formatter={(value: number) => [value, 'Leads']}
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                  }}
+                />
+                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           )}
         </div>
@@ -216,10 +260,10 @@ export default function Dashboard() {
         <div className="bg-card border border-border rounded-xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-foreground">Últimos Negócios Criados</h3>
+            <h3 className="font-semibold text-foreground">Últimos Negócios</h3>
           </div>
           {recentDeals.length === 0 ? (
-            <div className="flex items-center justify-center h-64 text-muted-foreground">
+            <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
               Nenhum negócio criado ainda
             </div>
           ) : (
@@ -229,18 +273,17 @@ export default function Dashboard() {
                   key={deal.id}
                   className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs flex-shrink-0">
                     {getInitials(deal.contactName || deal.title)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground text-sm truncate">{deal.title}</p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {deal.pipelineName} • {deal.phaseName}
+                      {deal.pipelineName}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="font-semibold text-primary text-sm">{formatCurrency(deal.value)}</p>
-                    <p className="text-xs text-muted-foreground">{formatDate(deal.createdAt)}</p>
                   </div>
                 </div>
               ))}

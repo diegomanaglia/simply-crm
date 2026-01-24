@@ -28,6 +28,7 @@ export const useCRMStore = create<CRMState>()(
       pipelines: [],
       selectedPipelineId: null,
       archivedDeals: [],
+      captureSettings: [],
 
       getPhaseName: (pipelineId: string, phaseId: string) => {
         const pipeline = get().pipelines.find((p) => p.id === pipelineId);
@@ -407,6 +408,56 @@ export const useCRMStore = create<CRMState>()(
               : p
           ),
         }));
+      },
+
+      // Add deal from public capture form
+      addDealFromCapture: (pipelineId: string, deal: Omit<Deal, 'id' | 'createdAt' | 'activities' | 'phaseId'>) => {
+        const pipeline = get().pipelines.find((p) => p.id === pipelineId);
+        if (!pipeline) return;
+        
+        const entryPhase = pipeline.phases.find((ph) => ph.type === 'entry');
+        if (!entryPhase) return;
+        
+        const creationActivity = createActivity(
+          'created',
+          `Lead capturado via formulário público - Fase "${entryPhase.name}"`
+        );
+        
+        const newDeal: Deal = {
+          ...deal,
+          id: generateId(),
+          phaseId: entryPhase.id,
+          createdAt: new Date().toISOString(),
+          activities: [creationActivity],
+        };
+        
+        set((state) => ({
+          pipelines: state.pipelines.map((p) =>
+            p.id === pipelineId ? { ...p, deals: [...p.deals, newDeal] } : p
+          ),
+        }));
+      },
+
+      // Toggle capture settings for a pipeline
+      toggleCaptureSettings: (pipelineId: string, enabled: boolean) => {
+        set((state) => {
+          const existing = state.captureSettings.find((s) => s.pipelineId === pipelineId);
+          if (existing) {
+            return {
+              captureSettings: state.captureSettings.map((s) =>
+                s.pipelineId === pipelineId ? { ...s, enabled } : s
+              ),
+            };
+          }
+          return {
+            captureSettings: [...state.captureSettings, { pipelineId, enabled }],
+          };
+        });
+      },
+
+      // Get capture settings for a pipeline
+      getCaptureSettings: (pipelineId: string) => {
+        return get().captureSettings.find((s) => s.pipelineId === pipelineId);
       },
     }),
     {
