@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -22,6 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useSidebarContext } from '@/contexts/SidebarContext';
 
 const menuItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -33,7 +33,7 @@ const menuItems = [
 ];
 
 export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, toggleCollapsed } = useSidebarContext();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
 
@@ -59,7 +59,7 @@ export function Sidebar() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={toggleCollapsed}
           className="text-sidebar-foreground hover:bg-sidebar-accent flex-shrink-0"
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
