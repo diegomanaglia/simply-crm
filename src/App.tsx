@@ -33,96 +33,97 @@ const CapturePage = lazy(() => import("@/pages/CapturePage"));
 const queryClient = new QueryClient();
 
 function PageLoader() {
-  return (
-    <div className="flex items-center justify-center h-screen">
-      <LoadingSpinner size="lg" text="Carregando..." />
-    </div>
-  );
+    return (
+        <div className="flex items-center justify-center h-screen">
+            <LoadingSpinner size="lg" text="Carregando..." />
+        </div>
+    );
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <AuthProvider>
-        <SidebarProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                {/* Public auth routes */}
-                <Route
-                  path="/login"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <LoginPage />
-                    </Suspense>
-                  }
-                />
-                <Route
-                  path="/register"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <RegisterPage />
-                    </Suspense>
-                  }
-                />
-                <Route
-                  path="/forgot-password"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ForgotPasswordPage />
-                    </Suspense>
-                  }
-                />
-                <Route
-                  path="/reset-password"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ResetPasswordPage />
-                    </Suspense>
-                  }
-                />
+    <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+            <AuthProvider>
+                <SidebarProvider>
+                    <TooltipProvider>
+                        <Toaster />
+                        <Sonner />
+                        <BrowserRouter>
+                            <Routes>
+                                {/* Public auth routes */}
+                                <Route
+                                    path="/login"
+                                    element={
+                                        <Suspense fallback={<PageLoader />}>
+                                            <LoginPage />
+                                        </Suspense>
+                                    }
+                                />
+                                <Route
+                                    path="/register"
+                                    element={
+                                        <Suspense fallback={<PageLoader />}>
+                                            <RegisterPage />
+                                        </Suspense>
+                                    }
+                                />
+                                <Route
+                                    path="/forgot-password"
+                                    element={
+                                        <Suspense fallback={<PageLoader />}>
+                                            <ForgotPasswordPage />
+                                        </Suspense>
+                                    }
+                                />
+                                <Route
+                                    path="/reset-password"
+                                    element={
+                                        <Suspense fallback={<PageLoader />}>
+                                            <ResetPasswordPage />
+                                        </Suspense>
+                                    }
+                                />
 
-                {/* Public capture page */}
-                <Route
-                  path="/captura/:pipelineId"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <CapturePage />
-                    </Suspense>
-                  }
-                />
+                                {/* Public capture page */}
+                                <Route
+                                    path="/captura/:pipelineId"
+                                    element={
+                                        <Suspense fallback={<PageLoader />}>
+                                            <CapturePage />
+                                        </Suspense>
+                                    }
+                                />
 
-                {/* Protected routes with layout */}
-                <Route
-                  path="/*"
-                  element={
-                    <ProtectedRoute>
-                      <MainLayout>
-                        <Suspense fallback={<PageLoader />}>
-                          <Routes>
-                            <Route path="/" element={<Dashboard />} />
-                            <Route path="/pipelines" element={<PipelinesPage />} />
-                            <Route path="/archived" element={<ArchivedLeadsPage />} />
-                            <Route path="/reports" element={<ReportsPage />} />
-                            <Route path="/integrations" element={<IntegrationsPage />} />
-                            <Route path="/settings" element={<SettingsPage />} />
-                            <Route path="/profile" element={<ProfilePage />} />
-                            <Route path="*" element={<NotFound />} />
-                          </Routes>
-                        </Suspense>
-                      </MainLayout>
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </SidebarProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+                                {/* Protected routes with layout */}
+                                <Route
+                                    path="/*"
+                                    element={
+                                        <ProtectedRoute>
+                                            <MainLayout>
+                                                <Suspense fallback={<PageLoader />}>
+                                                    <Routes>
+                                                        <Route path="/" element={<Dashboard />} />
+                                                        <Route path="/pipelines" element={<PipelinesPage />} />
+                                                        <Route path="/pipeline/:slug" element={<PipelinesPage />} />
+                                                        <Route path="/archived" element={<ArchivedLeadsPage />} />
+                                                        <Route path="/reports" element={<ReportsPage />} />
+                                                        <Route path="/integrations" element={<IntegrationsPage />} />
+                                                        <Route path="/settings" element={<SettingsPage />} />
+                                                        <Route path="/profile" element={<ProfilePage />} />
+                                                        <Route path="*" element={<NotFound />} />
+                                                    </Routes>
+                                                </Suspense>
+                                            </MainLayout>
+                                        </ProtectedRoute>
+                                    }
+                                />
+                            </Routes>
+                        </BrowserRouter>
+                    </TooltipProvider>
+                </SidebarProvider>
+            </AuthProvider>
+        </ThemeProvider>
+    </QueryClientProvider>
 );
 
 export default App;
